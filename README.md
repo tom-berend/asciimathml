@@ -27,7 +27,7 @@ color and fonts.
 
 ## Usage
 ```
-import {AsciiMath} from 'ASCIIMathML'
+import {AsciiMath} from 'ASCIIMathML-ts'
 
 let a = new AsciiMath()
 
