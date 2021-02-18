@@ -1,10 +1,12 @@
 {
-  "name": "asciimathml",
+  "name": "asciimathml-ts",
   "version": "1.0.0",
-  "description": "Convert AsciiMathML to TS",
-  "main": "ASCIIMathML.js",
+  "description": "AsciiMathML converted to TS",
+  "main": "index.js",
+  "types": "index.d.ts",
   "scripts": {
-    "watch": "tsc ASCIIMathML.ts -watch"
+    "build": "tsc",
+    "watch": "tsc -watch"
   },
   "repository": {
     "type": "git",
@@ -12,8 +14,6 @@
   },
   "author": "",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/tom-berend/asciimathml/issues"
-  },
-  "homepage": "https://github.com/tom-berend/asciimathml#readme"
+  "homepage": "https://github.com/tom-berend/asciimathml#readme",
+  "keywords": ["MathML","ASCIIMath","ASCIIMathML","TypeScript"]
 }
