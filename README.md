@@ -3,6 +3,12 @@ asciimathml-ts
 
 This is a quick-and-dirty port of ASCIIMathML.js into TS and NPM.
 
+Update jan.2026:  updated tsconfig to output ES6 module and added an example.  Check the original, there seems to be new feature being added.
+
+----
+
+Original Readme feb.2021
+
 Disclaimer: I'm the wrong guy to build this, I am just on day one of learning ASCIIMath. But the existing library didn't meet my needs, so I ran it through TS and posted it on NPM.
 
 It's not completely clean.  There is some confusion in the original code between DocumentFragments and strings that prevents strict TS typechecking.  I'll come back
@@ -14,7 +20,7 @@ ASCIIMathML translates from ASCIIMath to MathML.  [Check this out.](http://www1.
 
 As I write this, MathML is only supported in FireFox and Opera, but it looks as if Chrome support is [on the horizon.](https://mathml.igalia.com/)
 
-The original ASCIIMathML is here: [https://github.com/asciimath/asciimathml](https://github.com/asciimath/asciimathml) 
+The original ASCIIMathML is here: [https://github.com/asciimath/asciimathml](https://github.com/asciimath/asciimathml)
 
 
 

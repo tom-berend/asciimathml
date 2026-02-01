@@ -1,4 +1,4 @@
-declare type AMSymbol = {
+type AMSymbol = {
     input: string;
     tag: 'mi' | 'mo' | 'mn' | 'mroot' | 'mfrac' | 'msup' | 'msub' | 'mover' | 'mtext' | 'msqrt' | 'munder' | 'mstyle' | 'menclose' | 'mrow';
     output: string;
@@ -13,7 +13,7 @@ declare type AMSymbol = {
     atval?: "bold" | "sans-serif" | "double-struck" | "script" | "fraktur" | "monospace";
     codes?: string[];
 };
-declare type Tag = 'div' | 'p' | 'span' | 'body' | 'a';
+type Tag = 'div' | 'p' | 'span' | 'body' | 'a';
 /** convert an AsciiMath statement to MathML */
 export declare class AsciiMath {
     noMathML: boolean;

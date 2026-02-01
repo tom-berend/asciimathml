@@ -15,5 +15,13 @@
   "author": "",
   "license": "ISC",
   "homepage": "https://github.com/tom-berend/asciimathml#readme",
-  "keywords": ["MathML","ASCIIMath","ASCIIMathML","TypeScript"]
+  "keywords": [
+    "MathML",
+    "ASCIIMath",
+    "ASCIIMathML",
+    "TypeScript"
+  ],
+  "dependencies": {
+    "typescript": "^5.9.3"
+  }
 }

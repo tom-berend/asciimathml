@@ -3,8 +3,8 @@
 ASCIIMathML.ts
 ==============
 lightly modified by Tom Berend - original copyright below...
-convert to a TS function that accepts AsciiMath and returns MathML.  
-not a page translator.  Don't touch my document, I'll do that.  
+convert to a TS function that accepts AsciiMath and returns MathML.
+not a page translator.  Don't touch my document, I'll do that.
 and don't worry about IE.
 got rid of the onLoad function (just use ASCIIMathML.js for that)
 
@@ -75,12 +75,12 @@ type AMSymbol = {
     invisible?: boolean         // all these other unreliable elements ?!?!
     func?: boolean
     acc?: boolean
-    rewriteleftright?: string[]  // always two 
+    rewriteleftright?: string[]  // always two
     notexcopy?: boolean
 
     atname?: "mathvariant",
     atval?: "bold" | "sans-serif" | "double-struck" | "script" | "fraktur" | "monospace"
-    codes?: string[]   // AMcal | AMfrk | AMbbb | 
+    codes?: string[]   // AMcal | AMfrk | AMbbb |
 }
 
 type Tag = 'div' | 'p' | 'span' | 'body' | 'a'
@@ -920,7 +920,7 @@ export class AsciiMath {
         return 0;
     }
 
-    /** hunt through a document and translate every math element.  
+    /** hunt through a document and translate every math element.
      * if spanclassAM is provided, then it is the <tag> that holds math (perhaps 'span'?)
      * otherwise we go looking for AMdelimiter
      */
