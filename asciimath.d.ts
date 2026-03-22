@@ -30,12 +30,10 @@ export declare class AsciiMath {
     AMdelimiter1: string;
     AMescape1: string;
     AMSymbols: AMSymbol[];
+    warnings: string[];
     constructor();
     /** Add a stylesheet, replacing any previous custom stylesheet (adapted from TW) */
     setStylesheet(s: string): void;
-    init(): boolean;
-    checkMathML(): string;
-    hideWarning(): void;
     displayWarnings(warnings: string[]): void;
     /** Find and translate all math on a page.  if spanclassAM is provided then it
      * is the tag to look for.  Perhaps 'span' is a good value.  If it is NOT

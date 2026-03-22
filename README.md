@@ -3,7 +3,8 @@ asciimathml-ts
 
 This is a quick-and-dirty port of ASCIIMathML.js into TS and NPM.
 
-Update jan.2026:  updated tsconfig to output ES6 module and added an example.  Check the original, there seems to be new feature being added.
+Update jan.2026:  update tsconfig to output ES6 module and added an example.
+Update mar 2026   updated symbol table from asciimathml repository (arcsec, !sub, dagger, etc)
 
 ----
 

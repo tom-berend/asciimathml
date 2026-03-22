@@ -115,9 +115,9 @@ export class AsciiMath {
     AMnames: string[] = []; //list of input symbols
     AMmathml = "http://www.w3.org/1998/Math/MathML";
 
-    AMnestingDepth: number
-    AMpreviousSymbol: number  // one of the
-    AMcurrentSymbol: number
+    AMnestingDepth = 0
+    AMpreviousSymbol = 0
+    AMcurrentSymbol = 0
 
     mathcolor = "blue";        // change it to "" (to inherit) or another color
     mathfontsize = "1em";      // change to e.g. 1.2em for larger math
@@ -126,13 +126,13 @@ export class AsciiMath {
     AMdelimiter1 = "`"    // when hunting through a doc looking for math to translate
     AMescape1 = "\\\\`"   // can use other characters
 
-    AMSymbols: AMSymbol[]
+    AMSymbols: AMSymbol[] = []
 
+    warnings: string[] = []
     constructor() {
         this.setStylesheet("#AMMLcloseDiv \{font-size:0.8em padding-top:1em color:#014\}\n#AMMLwarningBox \{position:absolute width:100% top:0 left:0 z-index:200 text-align:center font-size:1em font-weight:bold padding:0.5em 0 0.5em 0 color:#ffc background:#c30\}")
 
         this.initSymbols()
-        this.init()
     }
 
 
@@ -148,7 +148,7 @@ export class AsciiMath {
         //     // This failed without the &nbsp;
         //     document.getElementsByTagName("head")[0].insertAdjacentHTML("beforeend", "&nbsp;<style id='" + id + "'>" + s + "</style>");    // tbtb not 'beforeEnd'
         // } else {
-        if (n) {
+        if (n && n.firstChild) {
             n.replaceChild(document.createTextNode(s), n.firstChild);
         } else {
             n = document.createElement("style");
@@ -161,72 +161,14 @@ export class AsciiMath {
     }
 
 
-    init() {
-        let msg, warnings = new Array();
-        if (document.getElementById == null) {
-            alert("This webpage requires a recent browser such as Mozilla Firefox");
-            return null;
-        }
-        if (checkForMathML && (msg = this.checkMathML())) warnings.push(msg);
-        if (warnings.length > 0) this.displayWarnings(warnings);
-        if (!this.noMathML) this.initSymbols();
-        return true;
-    }
 
-    checkMathML() {
-        if (navigator.appName.slice(0, 8) == "Netscape")
-            if (navigator.appVersion.slice(0, 1) >= "5") this.noMathML = null;
-            else this.noMathML = true;
-        // else if (navigator.appName.slice(0, 9) == "Microsoft")
-        //     try {
-        //         let ActiveX = new ActiveXObject("MathPlayer.Factory.1");
-        //         noMathML = null;
-        //     } catch (e) {
-        //         noMathML = true;
-        //     }
-        else if (navigator.appName.slice(0, 5) == "Opera")
-            if (navigator.appVersion.slice(0, 3) >= "9.5") this.noMathML = null;
-            else this.noMathML = true;
-
-        //noMathML = true; //uncomment to check
-        if (this.noMathML && notifyIfNoMathML) {
-            let msg = "To view the ASCIIMathML notation use Internet Explorer + MathPlayer or Mozilla Firefox 2.0 or later.";
-            if (alertIfNoMathML)
-                alert(msg);
-            else return msg;
-        }
-    }
-
-    hideWarning() {
-        let body = document.getElementsByTagName("body")[0];
-        body.removeChild(document.getElementById('AMMLwarningBox'));
-        body.onclick = null;
-    }
 
     displayWarnings(warnings: string[]) {
-        let i, frag, nd = this.createElementXHTML("div");
-        let body = document.getElementsByTagName("body")[0];
-        body.onclick = this.hideWarning;
-        nd.id = 'AMMLwarningBox';
-        for (i = 0; i < warnings.length; i++) {
-            frag = this.createElementXHTML("div");
-            frag.appendChild(document.createTextNode(warnings[i]));
-            frag.style.paddingBottom = "1.0em";
-            nd.appendChild(frag);
+        for (let i = 0; i < this.warnings.length; i++) {
+            console.warn(`AsciiMathML: ${this.warnings[i]}`)
         }
-        nd.appendChild(this.createElementXHTML("p"));
-        nd.appendChild(document.createTextNode("For instructions see the "));
-        let an = this.createElementXHTML("a");
-        an.appendChild(document.createTextNode("ASCIIMathML"));
-        an.setAttribute("href", "http://asciimath.org");
-        nd.appendChild(an);
-        nd.appendChild(document.createTextNode(" homepage"));
-        an = this.createElementXHTML("div");
-        an.id = 'AMMLcloseDiv';
-        an.appendChild(document.createTextNode('(click anywhere to close this warning)'));
-        nd.appendChild(an);
-        body.insertBefore(nd, body.childNodes[0]);
     }
+
 
     /** Find and translate all math on a page.  if spanclassAM is provided then it
      * is the tag to look for.  Perhaps 'span' is a good value.  If it is NOT
@@ -387,7 +329,7 @@ export class AsciiMath {
             this.AMcurrentSymbol = INFIX;  //trick "/" into recognizing "-" on second parse
             return { input: st, tag: tagst, output: st, tex: null, ttype: UNARY, func: true };
         }
-        return { input: st, tag: tagst, output: st, tex: null, ttype: CONST };
+        return { input: st, tag: tagst, output: st == "-" ? "\u2212" : st, tex: null, ttype: CONST };
     }
 
     AMremoveBrackets(node: Node) {
@@ -509,15 +451,26 @@ export class AsciiMath {
                     return [node, result[1]];
                 } else if (typeof symbol.acc == "boolean" && symbol.acc) {   // accent
                     node = this.createMmlNode(symbol.tag, result[0]);
-                    let accnode = this.createMmlNode("mo", document.createTextNode(symbol.output));
-                    if (symbol.input == "vec" && (
-                        (result[0].nodeName == "mrow" && result[0].childNodes.length == 1
-                            && result[0].firstChild.firstChild.nodeValue !== null
-                            && result[0].firstChild.firstChild.nodeValue.length == 1) ||
-                        (result[0].firstChild.nodeValue !== null
-                            && result[0].firstChild.nodeValue.length == 1))) {
-                        accnode.setAttribute("stretchy", false);   //tbtb
+
+                    // let accnode = this.createMmlNode("mo", document.createTextNode(symbol.output));
+                    // if (symbol.input == "vec" && (
+                    //     (result[0].nodeName == "mrow" && result[0].childNodes.length == 1
+                    //         && result[0].firstChild.firstChild.nodeValue !== null
+                    //         && result[0].firstChild.firstChild.nodeValue.length == 1) ||
+                    //     (result[0].firstChild.nodeValue !== null
+                    //         && result[0].firstChild.nodeValue.length == 1))) {
+                    //     accnode.setAttribute("stretchy", false);   //tbtb
+                    // }
+
+                    if (symbol.tag == 'mover' && symbol.ttype == UNARY) {
+                        node.setAttribute("accent", "true");
+                    } else if (symbol.tag == 'munder' && symbol.ttype == UNARY) {
+                        node.setAttribute("accentunder", "true");
                     }
+
+                    var accnode = this.createMmlNode("mo", document.createTextNode(symbol.output));
+                    accnode.setAttribute("stretchy", true)
+
                     node.appendChild(accnode);
                     return [node, result[1]];
                 } else {                        // font change command
@@ -740,28 +693,43 @@ export class AsciiMath {
                                 row = document.createDocumentFragment();
                                 frag = document.createDocumentFragment();
                                 node = newFrag.firstChild; // <mrow>(-,-,...,-,-)</mrow>
-                                n = node.childNodes.length;
-                                k = 0;
-                                node.removeChild(node.firstChild); //remove (
-                                for (let j = 1; j < n - 1; j++) {
-                                    if (typeof pos[i][k] != "undefined" && j == pos[i][k]) {
-                                        node.removeChild(node.firstChild); //remove ,
-                                        if (node.firstChild.nodeName == "mrow" && node.firstChild.childNodes.length == 1 &&
-                                            node.firstChild.firstChild.firstChild.nodeValue == "\u2223") {
-                                            //is columnline marker - skip it
-                                            if (i == 0) { columnlines.push("solid"); }
-                                            node.removeChild(node.firstChild); //remove mrow
-                                            node.removeChild(node.firstChild); //remove ,
-                                            j += 2;
-                                            k++;
-                                        } else if (i == 0) { columnlines.push("none"); }
-                                        row.appendChild(this.createMmlNode("mtd", frag));
-                                        k++;
-                                    } else frag.appendChild(node.firstChild);
+
+                                if (node) {
+                                    n = node.childNodes.length;
+                                    k = 0;
+                                    if (node.firstChild) {
+                                        node.removeChild(node.firstChild); //remove (
+                                        for (let j = 1; j < n - 1; j++) {
+                                            if (typeof pos[i][k] != "undefined" && j == pos[i][k]) {
+                                                node.removeChild(node.firstChild); //remove ,
+
+                                                if (node.firstChild.nodeName == "mrow" && node.firstChild.childNodes.length == 1 &&
+                                                    node.firstChild.firstChild &&
+                                                    node.firstChild.firstChild.firstChild &&
+                                                    node.firstChild.firstChild.firstChild.nodeValue == "\u2223") {
+                                                    //is columnline marker - skip it
+                                                    if (i == 0) { columnlines.push("solid"); }
+                                                    node.removeChild(node.firstChild); //remove mrow
+                                                    node.removeChild(node.firstChild); //remove ,
+                                                    j += 2;
+                                                    k++;
+                                                } else if (i == 0) { columnlines.push("none"); }
+                                                row.appendChild(this.createMmlNode("mtd", frag));
+                                                k++;
+                                            }
+                                            else {
+                                                frag.appendChild(node.firstChild);
+                                            }
+                                        }
+                                    } else {
+                                        this.warnings.push('node.firstchild was null: ' + str)
+                                    }
+                                } else {
+                                    this.warnings.push('node was null: ' + str)
                                 }
                                 row.appendChild(this.createMmlNode("mtd", frag));
                                 if (i == 0) { columnlines.push("none"); }
-                                if (newFrag.childNodes.length > 2) {
+                                if (newFrag.childNodes.length > 2 && newFrag.firstChild) {
                                     newFrag.removeChild(newFrag.firstChild); //remove <mrow>)</mrow>
                                     newFrag.removeChild(newFrag.firstChild); //remove <mo>,</mo>
                                 }
@@ -868,51 +836,54 @@ export class AsciiMath {
 
     processNodeR(n: Node, linebreaks: boolean): number {
         let mtch, str, arr, frg, i;
+
         if (n.childNodes.length == 0) {
-            if ((n.nodeType != 8 || linebreaks) &&
-                n.parentNode.nodeName != "form" && n.parentNode.nodeName != "FORM" &&
-                n.parentNode.nodeName != "textarea" && n.parentNode.nodeName != "TEXTAREA"
+            if (n.parentNode) {   // of course it is, but reassure TypeScript
+                if ((n.nodeType != 8 || linebreaks) &&
+                    n.parentNode.nodeName != "form" && n.parentNode.nodeName != "FORM" &&
+                    n.parentNode.nodeName != "textarea" && n.parentNode.nodeName != "TEXTAREA"
                 /*&& n.parentNode.nodeName!="pre" && n.parentNode.nodeName!="PRE"*/) {
-                str = n.nodeValue;
-                if (!(str == null)) {
-                    str = str.replace(/\r\n\r\n/g, "\n\n");
-                    str = str.replace(/\x20+/g, " ");
-                    str = str.replace(/\s*\r\n/g, " ");
-                    if (this.latex) {
-                        // DELIMITERS:
-                        mtch = (str.indexOf("\$") == -1 ? false : true);
-                        str = str.replace(/([^\\])\$/g, "$1 \$");
-                        str = str.replace(/^\$/, " \$");	// in case \$ at start of string
-                        arr = str.split(" \$");
-                        for (i = 0; i < arr.length; i++)
-                            arr[i] = arr[i].replace(/\\\$/g, "\$");
-                    } else {
-                        mtch = false;
-                        str = str.replace(new RegExp(this.AMescape1, "g"),
-                            function () { mtch = true; return "AMescape1" });
-                        str = str.replace(/\\?end{?a?math}?/i,
-                            function () { automathrecognize = false; mtch = true; return "" });
-                        str = str.replace(/amath\b|\\begin{a?math}/i,
-                            function () { automathrecognize = true; mtch = true; return "" });
-                        arr = str.split(this.AMdelimiter1);
-                        if (automathrecognize)
+                    str = n.nodeValue;
+                    if (!(str == null)) {
+                        str = str.replace(/\r\n\r\n/g, "\n\n");
+                        str = str.replace(/\x20+/g, " ");
+                        str = str.replace(/\s*\r\n/g, " ");
+                        if (this.latex) {
+                            // DELIMITERS:
+                            mtch = (str.indexOf("\$") == -1 ? false : true);
+                            str = str.replace(/([^\\])\$/g, "$1 \$");
+                            str = str.replace(/^\$/, " \$");	// in case \$ at start of string
+                            arr = str.split(" \$");
                             for (i = 0; i < arr.length; i++)
-                                if (i % 2 == 0) arr[i] = this.AMautomathrec(arr[i]);
-                        str = arr.join(this.AMdelimiter1);
-                        arr = str.split(this.AMdelimiter1);
-                        for (i = 0; i < arr.length; i++) // this is a problem ************
-                            arr[i] = arr[i].replace(/AMescape1/g, this.AMdelimiter1);
+                                arr[i] = arr[i].replace(/\\\$/g, "\$");
+                        } else {
+                            mtch = false;
+                            str = str.replace(new RegExp(this.AMescape1, "g"),
+                                function () { mtch = true; return "AMescape1" });
+                            str = str.replace(/\\?end{?a?math}?/i,
+                                function () { automathrecognize = false; mtch = true; return "" });
+                            str = str.replace(/amath\b|\\begin{a?math}/i,
+                                function () { automathrecognize = true; mtch = true; return "" });
+                            arr = str.split(this.AMdelimiter1);
+                            if (automathrecognize)
+                                for (i = 0; i < arr.length; i++)
+                                    if (i % 2 == 0) arr[i] = this.AMautomathrec(arr[i]);
+                            str = arr.join(this.AMdelimiter1);
+                            arr = str.split(this.AMdelimiter1);
+                            for (i = 0; i < arr.length; i++) // this is a problem ************
+                                arr[i] = arr[i].replace(/AMescape1/g, this.AMdelimiter1);
+                        }
+                        if (arr.length > 1 || mtch) {
+                            if (!this.noMathML) {
+                                frg = this.strarr2docFrag(arr, n.nodeType == 8);
+                                let len = frg.childNodes.length;
+                                n.parentNode.replaceChild(frg, n);
+                                return len - 1;
+                            } else return 0;
+                        }
                     }
-                    if (arr.length > 1 || mtch) {
-                        if (!this.noMathML) {
-                            frg = this.strarr2docFrag(arr, n.nodeType == 8);
-                            let len = frg.childNodes.length;
-                            n.parentNode.replaceChild(frg, n);
-                            return len - 1;
-                        } else return 0;
-                    }
-                }
-            } else return 0;
+                } else return 0;
+            }
         } else if (n.nodeName != "math") {
             for (i = 0; i < n.childNodes.length; i++)
                 i += this.processNodeR(n.childNodes[i], linebreaks);
@@ -925,18 +896,18 @@ export class AsciiMath {
      * otherwise we go looking for AMdelimiter
      */
     AMprocessNode(n: HTMLElement, linebreaks: boolean, spanclassAM?: string) {
+        let st: string = ''
         if (spanclassAM != null) {
             let frag = document.getElementsByTagName(spanclassAM)
             for (let i = 0; i < frag.length; i++)
                 if (frag[i].className == "AM")
                     this.processNodeR(frag[i], linebreaks);
         } else {
-            let st: string
             try {
                 st = n.innerHTML; // look for AMdelimiter on page
             } catch (err) { }
             //alert(st)
-            if (st == null || /amath\b|\\begin{a?math}/i.test(st) ||
+            if (st === undefined || /amath\b|\\begin{a?math}/i.test(st) ||
                 st.indexOf(this.AMdelimiter1 + " ") != -1 || st.slice(-1) == this.AMdelimiter1 ||
                 st.indexOf(this.AMdelimiter1 + "<") != -1 || st.indexOf(this.AMdelimiter1 + "\n") != -1) {
                 this.processNodeR(n, linebreaks);
@@ -1003,6 +974,7 @@ export class AsciiMath {
             { input: "divide", tag: "mo", output: "-:", tex: null, ttype: DEFINITION },
             { input: "@", tag: "mo", output: "\u2218", tex: "circ", ttype: CONST },
             { input: "o+", tag: "mo", output: "\u2295", tex: "oplus", ttype: CONST },
+            { input: "o-", tag: "mo", output: "\u2296", tex: "ominus", ttype: CONST },
             { input: "ox", tag: "mo", output: "\u2297", tex: "otimes", ttype: CONST },
             { input: "o.", tag: "mo", output: "\u2299", /*amparsei*/ tex: "odot", ttype: CONST },  //tbtb
             { input: "sum", tag: "mo", output: "\u2211", tex: null, ttype: UNDEROVER },
@@ -1015,6 +987,8 @@ export class AsciiMath {
             { input: "nnn", tag: "mo", output: "\u22C2", tex: "bigcap", ttype: UNDEROVER },
             { input: "uu", tag: "mo", output: "\u222A", tex: "cup", ttype: CONST },
             { input: "uuu", tag: "mo", output: "\u22C3", tex: "bigcup", ttype: UNDEROVER },
+            { input: "dag", tag: "mo", output: "\u2020", tex: "dagger", ttype: CONST },
+            { input: "ddag", tag: "mo", output: "\u2021", tex: "ddagger", ttype: CONST },
 
             //binary relation symbols
             { input: "!=", tag: "mo", output: "\u2260", tex: "ne", ttype: CONST },
@@ -1035,10 +1009,20 @@ export class AsciiMath {
             { input: "in", tag: "mo", output: "\u2208", tex: null, ttype: CONST },
             { input: "!in", tag: "mo", output: "\u2209", tex: "notin", ttype: CONST },
             { input: "sub", tag: "mo", output: "\u2282", tex: "subset", ttype: CONST },
+            { input: "!sub", tag: "mo", output: "\u2284", tex: "not\\subset", ttype: CONST },
+            { input: "notsubset", tag: "mo", output: "!sub", tex: null, ttype: DEFINITION },
             { input: "sup", tag: "mo", output: "\u2283", tex: "supset", ttype: CONST },
+            { input: "!sup", tag: "mo", output: "\u2285", tex: "not\\supset", ttype: CONST },
+            { input: "notsupset", tag: "mo", output: "!sup", tex: null, ttype: DEFINITION },
             { input: "sube", tag: "mo", output: "\u2286", tex: "subseteq", ttype: CONST },
+            { input: "!sube", tag: "mo", output: "\u2288", tex: "not\\subseteq", ttype: CONST },
+            { input: "notsubseteq", tag: "mo", output: "!sube", tex: null, ttype: DEFINITION },
             { input: "supe", tag: "mo", output: "\u2287", tex: "supseteq", ttype: CONST },
+            { input: "!supe", tag: "mo", output: "\u2289", tex: "not\\supseteq", ttype: CONST },
+            { input: "notsupseteq", tag: "mo", output: "!supe", tex: null, ttype: DEFINITION },
             { input: "-=", tag: "mo", output: "\u2261", tex: "equiv", ttype: CONST },
+            { input: "!-=", tag: "mo", output: "\u2262", tex: "not\\equiv", ttype: CONST },
+            { input: "notequiv", tag: "mo", output: "!-=", tex: null, ttype: DEFINITION },
             { input: "~=", tag: "mo", output: "\u2245", tex: "cong", ttype: CONST },
             { input: "~~", tag: "mo", output: "\u2248", tex: "approx", ttype: CONST },
             { input: "~", tag: "mo", output: "\u223C", tex: "sim", ttype: CONST },
@@ -1118,6 +1102,7 @@ export class AsciiMath {
             { input: "ZZ", tag: "mo", output: "\u2124", tex: null, ttype: CONST },
             { input: "f", tag: "mi", output: "f", tex: null, ttype: UNARY, func: true },
             { input: "g", tag: "mi", output: "g", tex: null, ttype: UNARY, func: true },
+            { input: "hbar", tag: "mo", output: "\u210F", tex: null, ttype: CONST },
 
             //standard functions
             { input: "lim", tag: "mo", output: "lim", tex: null, ttype: UNDEROVER },
@@ -1134,6 +1119,9 @@ export class AsciiMath {
             { input: "arcsin", tag: "mo", output: "arcsin", tex: null, ttype: UNARY, func: true },
             { input: "arccos", tag: "mo", output: "arccos", tex: null, ttype: UNARY, func: true },
             { input: "arctan", tag: "mo", output: "arctan", tex: null, ttype: UNARY, func: true },
+            { input: "arcsec", tag: "mo", output: "arcsec", tex: null, ttype: UNARY, func: true },
+            { input: "arccsc", tag: "mo", output: "arccsc", tex: null, ttype: UNARY, func: true },
+            { input: "arccot", tag: "mo", output: "arccot", tex: null, ttype: UNARY, func: true },
             { input: "coth", tag: "mo", output: "coth", tex: null, ttype: UNARY, func: true },
             { input: "sech", tag: "mo", output: "sech", tex: null, ttype: UNARY, func: true },
             { input: "csch", tag: "mo", output: "csch", tex: null, ttype: UNARY, func: true },
@@ -1193,7 +1181,7 @@ export class AsciiMath {
             { input: "underset", tag: "munder", output: "stackrel", tex: null, ttype: BINARY },
             { input: "_", tag: "msub", output: "_", tex: null, ttype: INFIX },
             { input: "^", tag: "msup", output: "^", tex: null, ttype: INFIX },
-            { input: "hat", tag: "mover", output: "\u005E", tex: null, ttype: UNARY, acc: true },
+            { input: "hat", tag: "mover", output: "\u0302", tex: null, ttype: UNARY, acc: true },
             { input: "bar", tag: "mover", output: "\u00AF", tex: "overline", ttype: UNARY, acc: true },
             { input: "vec", tag: "mover", output: "\u2192", tex: null, ttype: UNARY, acc: true },
             { input: "dot", tag: "mover", output: ".", tex: null, ttype: UNARY, acc: true },
@@ -1211,7 +1199,6 @@ export class AsciiMath {
 
             // AMquote,
             { input: "\"", tag: "mtext", output: "mbox", tex: null, ttype: TEXT },
-
 
 
             { input: "bb", tag: "mstyle", atname: "mathvariant", atval: "bold", output: "bb", tex: null, ttype: UNARY },

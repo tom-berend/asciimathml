@@ -2,9 +2,43 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <title>AsciiMath Example</title>
-    </script>
+    <title>ASCIIMathML test suite</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <style type="text/css">
+        #menu,
+        #title,
+        #subtitle,
+        #author,
+        .display {
+            text-align: center;
+        }
+
+        body {
+            font-family: Arial;
+            margin: 10%;
+        }
+
+        p,
+        table {
+            font-family: Times;
+        }
+
+        table {
+            border-collapse: collapse;
+        }
+
+        td,
+        th {
+            border: 1px solid black;
+            padding: 5px;
+            text-align: center;
+        }
+
+        img {
+            border: 0;
+        }
+    </style>
+
 </head>
 
 <body>
@@ -14,13 +48,12 @@
     <p id="insertMathHere"></p>
 
     <script type="module">
-        import { AsciiMath } from "./asciimath.js"
-
-        let a = new AsciiMath()
-        let eqn = 'sum_(i=1)^n i^3=((n(n+1))/2)^2'
-        document.getElementById('insertMathHere').appendChild(a.parseMath(eqn))
-
+        import { test } from "./test.js"
+        test()
     </script>
+
+    <div id="test">
+    </div>
 
 </body>
 
