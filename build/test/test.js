@@ -1,10 +1,23 @@
-import { AsciiMath } from "./asciimath.js";
+import { AsciiMath } from "../src/ts_asciimath.js";
 let am = new AsciiMath();
+import { asciimath } from "../src/js_ASCIIMathML.js";
+let am_old = asciimath;
 export function test() {
     let output = '';
     let d = document.getElementById('test');
     if (d) {
         let div = document.createElement('table');
+        let tr = document.createElement('tr');
+        div.appendChild(tr);
+        ['plaintext', 'TS', 'original JS', 'comment'].map((title) => {
+            let th = document.createElement('th');
+            th.innerHTML = title;
+            tr.appendChild(th);
+        });
+        appnd(div, '\\alpha  \\beta  \\gamma', `\\\\alpha in javascript`);
+        appnd(div, 'cc "AaBbCc"');
+        appnd(div, '\\textb bold');
+        appnd(div, '\\textb bold');
         appnd(div, 'sum_(i=1)^n i^3=((n(n+1))/2)^2');
         appnd(div, `x^2+y_1+z_12^34`);
         appnd(div, `sin^-1(x)`);
@@ -15,6 +28,7 @@ export function test() {
         appnd(div, `int_0^1f(x)dx`);
         appnd(div, `[[a,b],[c,d]]((n),(k))`);
         appnd(div, `x/x={(1,if x!=0),("undefined",if x=0):}`, 'undefined is broken');
+        appnd(div, 'x/x={(1,if x!=0),({undefined},if x=0):}', 'still broken, extra { and }');
         appnd(div, `a//b`);
         appnd(div, `(a/b)/(c/d)`);
         appnd(div, `a/b/c/d`);
@@ -100,6 +114,7 @@ export function test() {
         appnd(div, `ulx`);
         appnd(div, `ulxyz`);
         appnd(div, `ul(xyx)`);
+        appnd(div, ``);
         // issue 94
         appnd(div, `sin(x)/5`, 'issue 94');
         appnd(div, `sin^2(x)/5`);
@@ -111,8 +126,12 @@ export function test() {
         appnd(div, `f^2x^3/5`);
         appnd(div, `1/sin^2x^3`);
         appnd(div, `1/f^2x^3`);
+        appnd(div, `1/{f^2x^3}`);
+        appnd(div, `1/f^{2x^3}`);
+        appnd(div, ``);
+        appnd(div, `f'`);
         appnd(div, `1/f'`, 'wrong?');
-        appnd(div, `1/h'`, 'wrong?');
+        appnd(div, `1/{f'}`);
         appnd(div, ``);
         // issue 133
         appnd(div, `1 !-= 3`, 'issue 133');
@@ -136,19 +155,32 @@ export function test() {
         appnd(div, `3 \\not\\supseteq A`);
         appnd(div, `3 notsupseteq A`);
         appnd(div, `3 not\\supseteq A`);
+        appnd(div, ``);
+        appnd(div, 'a = 2pir^2');
         d.appendChild(div);
     }
 }
 function appnd(div, expr, comment = '') {
     let tr = document.createElement('tr');
     div.appendChild(tr);
+    // plaintext
     let td1 = document.createElement('td');
     td1.innerHTML = expr;
     tr.appendChild(td1);
+    // converted by new asciimathml
     let td2 = document.createElement('td');
     tr.appendChild(td2);
-    td2.appendChild(am.parseMath(expr));
+    let math = am.parseMath(expr);
+    td2.appendChild(math);
+    // let old asciimathml convert this one
     let td3 = document.createElement('td');
+    td3.innerHTML = '`' + expr;
     tr.appendChild(td3);
-    td3.innerHTML = comment;
+    // td2.appendChild(am.parseMath(expr))
+    // let p =  document.createElement('p')
+    // p.innerHTML = 'tom'
+    // td2.appendChild(p)
+    let td4 = document.createElement('td');
+    tr.appendChild(td4);
+    td4.innerHTML = comment;
 }

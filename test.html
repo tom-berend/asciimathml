@@ -3,7 +3,9 @@
 
 <head>
     <title>ASCIIMathML test suite</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <!-- <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script> -->
+
+
     <style type="text/css">
         #menu,
         #title,
@@ -42,18 +44,15 @@
 </head>
 
 <body>
-
-    <div id="buttons"></div>
-
-    <p id="insertMathHere"></p>
-
     <script type="module">
-        import { test } from "./test.js"
+        import { test } from "./build/test/test.js"
         test()
     </script>
 
     <div id="test">
     </div>
+
+    <script src="lib/ASCIIMathML.js"></script>
 
 </body>
 

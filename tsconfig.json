@@ -1,10 +1,19 @@
 {
     "compilerOptions": {
         "declaration": true,
-        "target": "es6",
-        "module": "es6",
+        "target": "esnext",
+        "module": "es2015",
+        "lib": [
+            "ESNext",
+            "DOM"
+        ],
         "strict": false,
         "esModuleInterop": true,
-        "skipLibCheck": true
-    }
+        "skipLibCheck": true,
+        "outDir": "./build"
+    },
+    "exclude": [
+        "./build"
+    ]
+
 }

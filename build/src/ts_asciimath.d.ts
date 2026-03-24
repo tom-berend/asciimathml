@@ -1,7 +1,7 @@
 type AMSymbol = {
     input: string;
     tag: 'mi' | 'mo' | 'mn' | 'mroot' | 'mfrac' | 'msup' | 'msub' | 'mover' | 'mtext' | 'msqrt' | 'munder' | 'mstyle' | 'menclose' | 'mrow';
-    output: string;
+    output?: string;
     tex: string | null;
     ttype: number;
     invisible?: boolean;
@@ -32,8 +32,6 @@ export declare class AsciiMath {
     AMSymbols: AMSymbol[];
     warnings: string[];
     constructor();
-    /** Add a stylesheet, replacing any previous custom stylesheet (adapted from TW) */
-    setStylesheet(s: string): void;
     displayWarnings(warnings: string[]): void;
     /** Find and translate all math on a page.  if spanclassAM is provided then it
      * is the tag to look for.  Perhaps 'span' is a good value.  If it is NOT

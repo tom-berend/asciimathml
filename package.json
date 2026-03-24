@@ -1,12 +1,10 @@
 {
   "name": "asciimathml-ts",
   "version": "1.0.1",
-  "description": "AsciiMathML converted to TS",
-  "main": "index.js",
-  "types": "index.d.ts",
+  "description": "AsciiMathML converted to TS, no dependencies",
   "scripts": {
-    "build": "tsc",
-    "watch": "tsc -watch"
+    "build": "rm -rf build && tsc",
+    "watch": "rm -rf build && tsc -watch"
   },
   "repository": {
     "type": "git",
@@ -21,7 +19,7 @@
     "ASCIIMathML",
     "TypeScript"
   ],
-  "dependencies": {
+  "devDependencies": {
     "typescript": "^5.9.3"
   }
 }
