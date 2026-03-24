@@ -1,7 +1,6 @@
-import { AsciiMath } from "../src/ts_asciimath.js";
-let am = new AsciiMath();
-import { asciimath } from "../src/js_ASCIIMathML.js";
-let am_old = asciimath;
+import { AsciiMath } from "../src/asciimath.js";
+let am_old = new AsciiMath();
+// am_old.init()
 export function test() {
     let output = '';
     let d = document.getElementById('test');
@@ -27,8 +26,7 @@ export function test() {
         appnd(div, `f(x)=\\sum_{n=0}^\\infty\\frac{f^{(n)}(a)}{n!}(x-a)^n`);
         appnd(div, `int_0^1f(x)dx`);
         appnd(div, `[[a,b],[c,d]]((n),(k))`);
-        appnd(div, `x/x={(1,if x!=0),("undefined",if x=0):}`, 'undefined is broken');
-        appnd(div, 'x/x={(1,if x!=0),({undefined},if x=0):}', 'still broken, extra { and }');
+        appnd(div, `x/x={(1,if x!=0),("undefined",if x=0):}`);
         appnd(div, `a//b`);
         appnd(div, `(a/b)/(c/d)`);
         appnd(div, `a/b/c/d`);
@@ -170,7 +168,7 @@ function appnd(div, expr, comment = '') {
     // converted by new asciimathml
     let td2 = document.createElement('td');
     tr.appendChild(td2);
-    let math = am.parseMath(expr);
+    let math = am_old.parseMath(expr);
     td2.appendChild(math);
     // let old asciimathml convert this one
     let td3 = document.createElement('td');

@@ -13,7 +13,7 @@ type AMSymbol = {
     atval?: "bold" | "sans-serif" | "double-struck" | "script" | "fraktur" | "monospace";
     codes?: string[];
 };
-export declare class asciimath {
+export declare class AsciiMath {
     mathcolor: string;
     mathfontsize: string;
     mathfontfamily: string;

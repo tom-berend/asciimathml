@@ -1,9 +1,3 @@
-// TODO
-// internal stylesheet for <b> <i> <ss> colors, fonts
-// clean up parser that finds symbols in text (eg: 'in' in undefined)
-// maybe add fonts created from unicode glyphs
-// investigate TEMML   https://temml.org/
-// integrate weird fonts https://github.com/beizhedenglong/weird-fonts
 /*
 ASCIIMathML.js
 ==============
