@@ -688,24 +688,15 @@ export class AsciiMath {
                 else { // font change command
                     if (typeof symbol.codes != "undefined") {
                         for (i = 0; i < result[0].childNodes.length; i++)
-                            if (result[0].childNodes[i].nodeName == "mi" || result[0].nodeName == "mi") {
-                                st = (result[0].nodeName == "mi" ? result[0].firstChild.textContent :
-                                    result[0].childNodes[i].firstChild.textContent);
-                                var newst = this.substituteGlyphs(st, symbol.codes);
-                                if (result[0].nodeName == "mi")
-                                    result[0].textContent = newst;
-                                else
-                                    result[0].childNodes[i].textContent = newst;
-                            }
-                            else if (result[0].childNodes[i].nodeName == "mtext") { // mtext nodes
-                                console.log(result[0].firstChild);
-                                let st = result[0].childNodes[i].textContent;
-                                let newst = this.substituteGlyphs(st, symbol.codes);
-                                result[0].childNodes[i].textContent = newst;
-                            }
+                            ['mrow', 'mi', 'mo', 'mtext'].map((tag) => {
+                                // if(result[0].nodeName === tag)
+                                //     result[0].textContent = this.substituteGlyphs(result[0].textContent, symbol.codes);
+                                if (result[0].childNodes[i].nodeName === tag)
+                                    result[0].childNodes[i].textContent = this.substituteGlyphs(result[0].childNodes[i].textContent, symbol.codes);
+                            });
                     }
                     node = this.createMmlNode(symbol.tag, result[0]);
-                    node.setAttribute(symbol.atname, symbol.atval);
+                    // node.setAttribute(symbol.atname, symbol.atval);
                     return [node, result[1]];
                 }
             case BINARY:
@@ -979,10 +970,10 @@ export class AsciiMath {
             node.setAttribute("fontsize", this.mathfontsize);
             node.setAttribute("mathsize", this.mathfontsize);
         }
-        if (this.mathfontfamily != "") {
-            node.setAttribute("fontfamily", this.mathfontfamily);
-            node.setAttribute("mathvariant", this.mathfontfamily);
-        }
+        // if (this.mathfontfamily != "") {
+        node.setAttribute("fontfamily", this.mathfontfamily);
+        // node.setAttribute("mathvariant", this.mathfontfamily);
+        // }
         if (this.displaystyle)
             node.setAttribute("displaystyle", "true");
         node = this.createMmlNode("math", node);
@@ -1170,7 +1161,7 @@ n.parentNode.nodeName!="pre" && n.parentNode.nodeName!="PRE"*/) {
         Array.from(str).forEach(char => {
             let glyphIndex = fonts["serif.normal"].indexOf(char); // index of chars we can substitute
             console.log(char, glyphIndex);
-            glyphString += (glyphIndex < 0) ? char : fonts[glyphFont][glyphIndex]; // substitute if index found
+            glyphString += (glyphIndex >= 0 && fonts[glyphFont].length > glyphIndex) ? fonts[glyphFont][glyphIndex] : char; // substitute if index found
         });
         console.log(glyphString);
         return glyphString;
