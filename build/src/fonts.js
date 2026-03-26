@@ -77,3 +77,4 @@ export class WeirdFonts {
         return res;
     };
 }
+//# sourceMappingURL=fonts.js.map

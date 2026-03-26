@@ -11,7 +11,7 @@ type AMSymbol = {
     notexcopy?: boolean;
     atname?: "mathvariant";
     atval?: "bold" | "sans-serif" | "double-struck" | "script" | "fraktur" | "monospace";
-    codes?: string[];
+    codes?: string;
 };
 export declare class AsciiMath {
     mathcolor: string;
@@ -80,5 +80,6 @@ export declare class AsciiMath {
     AMautomathrec(str: any): any;
     processNodeR(n: any, linebreaks: any, latex: any): number;
     AMprocessNode(n: any, linebreaks: any, spanclassAM: any): void;
+    substituteGlyphs(str: string, font: string): string;
 }
 export {};

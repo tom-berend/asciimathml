@@ -10,10 +10,10 @@
         "strict": false,
         "esModuleInterop": true,
         "skipLibCheck": true,
-        "outDir": "./build"
+        "outDir": "./build",
+        "sourceMap": true
     },
     "exclude": [
         "./build"
     ]
-
 }
