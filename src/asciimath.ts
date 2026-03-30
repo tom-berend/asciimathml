@@ -43,7 +43,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-import { Parser } from "./parser.js"
+import { Parser, AMSymbol } from "./parser.js"
 
 type Tag = 'div' | 'p' | 'span' | 'body' | 'a'
 
@@ -56,24 +56,6 @@ var CONST = 0, UNARY = 1, BINARY = 2, INFIX = 3, LEFTBRACKET = 4,
     LEFTRIGHT = 9, TEXT = 10, BIG = 11, LONG = 12, STRETCHY = 13,
     MATRIX = 14, UNARYUNDEROVER = 15; // token types
 
-
-type AMSymbol = {
-    input: string
-    tag: string // 'mi' | 'mo' | 'mn' | 'mroot' | 'mfrac' | 'msup' | 'msub' | 'mover' | 'mtext' | 'msqrt' | 'munder' | 'mstyle' | 'menclose' | 'mrow'
-    output?: string
-    tex?: string | null
-    ttype: number //tokenType
-
-    invisible?: boolean         // all these other unreliable elements ?!?!
-    func?: boolean
-    acc?: boolean
-    rewriteleftright?: string[]  // always two
-    notexcopy?: boolean
-
-    atname?: "mathvariant",
-    atval?: "bold" | "sans-serif" | "double-struck" | "script" | "fraktur" | "monospace"
-    codes?: string
-}
 
 const fixphi = true;  		//false to return to legacy phi/varphi mapping
 
@@ -381,10 +363,6 @@ const AMsymbols: AMSymbol[] = [
 
 
 export class AsciiMath extends Parser {
-
-
-    /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-
 
     constructor() {
         let defaults = {

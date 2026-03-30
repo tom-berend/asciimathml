@@ -11,7 +11,7 @@
             "type": "chrome",
             "request": "launch",
             "name": "Launch Chrome against localhost",
-            "url": "http://localhost/asciimathml/test.html",
+            "url": "http://localhost/asciimathml/lxtest.html",
             "webRoot": "${workspaceFolder}"
         }
     ]

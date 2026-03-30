@@ -1,4 +1,36 @@
-var CONST = 0, UNARY = 1, BINARY = 2, INFIX = 3, LEFTBRACKET = 4,
+const debug = true
+
+/*Parsing ASCII math expressions with the following grammar
+v ::= [A-Za-z] | greek letters | numbers | other constant symbols
+u ::= sqrt | text | bb | other unary symbols for font commands
+b ::= frac | root | stackrel         binary symbols
+l ::= ( | [ | { | (: | {:            left brackets
+r ::= ) | ] | } | :) | :}            right brackets
+S ::= v | lEr | uS | bSS             Simple expression
+I ::= S_S | S^S | S_S^S | S          Intermediate expression
+E ::= IE | I/I                       Expression
+Each terminal symbol is translated into a corresponding mathml node.*/
+
+
+export type AMSymbol = {
+    input: string
+    tag: string // 'mi' | 'mo' | 'mn' | 'mroot' | 'mfrac' | 'msup' | 'msub' | 'mover' | 'mtext' | 'msqrt' | 'munder' | 'mstyle' | 'menclose' | 'mrow'
+    output?: string
+    tex?: string | null
+    ttype: number //tokenType
+
+    invisible?: boolean         // all these other unreliable elements ?!?!
+    func?: boolean
+    acc?: boolean
+    rewriteleftright?: string[]  // always two
+    notexcopy?: boolean
+
+    atname?: "mathvariant",
+    atval?: "bold" | "sans-serif" | "double-struck" | "script" | "fraktur" | "monospace"
+    codes?: string
+}
+
+const CONST = 0, UNARY = 1, BINARY = 2, INFIX = 3, LEFTBRACKET = 4,
     RIGHTBRACKET = 5, SPACE = 6, UNDEROVER = 7, DEFINITION = 8,
     LEFTRIGHT = 9, TEXT = 10, BIG = 11, LONG = 12, STRETCHY = 13,
     MATRIX = 14, UNARYUNDEROVER = 15; // token types
@@ -7,10 +39,17 @@ export interface LooseObject { [key: string]: any }
 
 const AMmathml = "http://www.w3.org/1998/Math/MathML";
 
+// lexScanner values
+type LEX_TOKEN = [string, number]
+const LEX_STRING = -1,
+    LEX_LEFTBRACKET = -2,
+    LEX_RIGHTBRACKET = -3        // otherwise index of amsymbol 0-n
+
+
 
 export abstract class Parser {
 
-    AMsymbols
+    AMsymbols: AMSymbol[]
     AMquote
 
     noMathML = false
@@ -49,7 +88,95 @@ export abstract class Parser {
         this.translateASCIIMath = attributes.translateASCIIMath
         this.displaystyle = attributes.displaystyle
         this.decimalsign = attributes.decimalsign
+
+        this.testLexScanner()
     }
+
+
+    testLexScanner() {
+        console.log('testing LexScanner')
+        let tests = [
+            ['ab{cd}ef', `[ab,-1][{,-2][cd,-1][},-3][ef,-1]`],
+            ['{cd}ef', `[{,-2][cd,-1][},-3][ef,-1]`],
+            ['ab{cd}', `[ab,-1][{,-2][cd,-1][},-3]`],
+            ['\\frac{cd}', `[\\frac,55][{,-2][cd,-1][},-3]`],
+            ['\\{ { and } \\}', `[\\{ ,-1][{,-2][ and ,-1][},-3][ \\},-1]`],
+        ]
+
+        tests.map((test) => {
+            let results = this.lexScanner(test[0])
+            let resultStr = ''
+            results.map((token) => resultStr += `[${token[0]},${token[1]}]`)
+            console.assert(resultStr === test[1], `Fails on ${test[0]} expected ${test[1]} got ${resultStr}`)
+            // console.log(test[1])
+            // console.log(resultStr)
+        })
+    }
+
+
+
+    /** returns an array of string-index pairs, either curly/-1 or unknown/2 or cmd/index */
+    //  \sqrt[2]{n+1} has a parameter and an argument
+    //  If you want curly bracket, use \{ (-2) and \} (-3).
+    //  Square brackets aren't a problem, the parser figures it out.
+    //  outputs tokens [lex, -1/-2/-3/index]
+    //  whitespace is NOT trimmed yet
+    lexScanner(text: string): [string, number][] {
+
+        // macro that takes a snip and returns either [snip, index] or [snip, LEX_STRING] depending on value
+        let snip = (snip: string): LEX_TOKEN => {
+            let index = this.AMsymbols.findIndex((symbol) => symbol.input === snip)
+            if (index == -1)    // not in symbol table
+                return [snip, LEX_STRING]
+            else
+                return [snip, index]
+        }
+
+        // walk character-by-character and pull out the snips
+        let curly = ['}', '{']
+        let pos = 0
+        let tokens: LEX_TOKEN[] = [] //text, lexScanner value or index of amssymbol
+
+        let tokenStart = pos
+        while (pos < text.length) {
+            let ch = text.charAt(pos);
+
+            // special case for \ (so we can process \{ and \}
+            if (ch == '\\' && pos < (text.length - 1)) {   //  \ and not-last-character
+                if (curly.includes(text.slice(pos + 1, pos + 2))) { // escaped curly
+                    pos += 2    // just skip over / and curly
+                    continue;
+                }
+
+            }
+
+            // always break on a curly
+            if (curly.includes(ch)) {
+                if (tokenStart == pos) {    // nothing between this and previous token
+                    tokens.push([ch, curly.indexOf(ch) - 3])  // translates 0,1 to -3,-2
+                } else {
+                    tokens.push(snip(text.slice(tokenStart, pos)))
+                    tokens.push([ch, curly.indexOf(ch) - 3])       // also push the curly
+                }
+                pos += 1
+                tokenStart = pos
+            }
+
+            pos += 1  // just keep collection
+        }
+        if (tokenStart < text.length) {    // any remainder not accounted for?
+            let cmd = text.slice(tokenStart)
+            tokens.push(snip(text.slice(tokenStart)))
+
+        }
+        return tokens
+    }
+
+
+
+
+
+
 
     /** Find and translate all math on a page.  if spanclassAM is provided then it
     * is the tag to look for.  Perhaps 'span' is a good value.  If it is NOT
@@ -115,7 +242,8 @@ export abstract class Parser {
     refreshSymbols() {
         var i;
         this.AMsymbols.sort(this.compareNames);
-        for (i = 0; i < this.AMsymbols.length; i++) this.AMnames[i] = this.AMsymbols[i].input;
+        for (i = 0; i < this.AMsymbols.length; i++)
+            this.AMnames[i] = this.AMsymbols[i].input;
     }
 
     define(oldstr, newstr) {
@@ -133,9 +261,8 @@ export abstract class Parser {
         return st.slice(i);
     }
 
-    position(arr, str, n) {
-        // return position >=n where str appears or would be inserted
-        // assumes arr is sorted
+    /** returns position >= n in sorted token array arr where str appears or would be inserted */
+    position(arr: string[], str: string, n: number): number {
         if (n == 0) {
             var h, m;
             n = -1;
@@ -150,9 +277,10 @@ export abstract class Parser {
         return i; // i=arr.length || arr[i]>=str
     }
 
-    AMgetSymbol(str) {
+    AMgetSymbol(str: string): AMSymbol {
         //return maximal initial substring of str that appears in names
         //return null if there is none
+        let ret: AMSymbol
         var k = 0; //new pos
         var j = 0; //old pos
         var mk; //match pos
@@ -163,7 +291,7 @@ export abstract class Parser {
         for (var i = 1; i <= str.length && more; i++) {
             st = str.slice(0, i); //initial substring of length i
             j = k;
-            k = this.position(this.AMnames, st, j);
+
             if (k < this.AMnames.length && str.slice(0, this.AMnames[k].length) == this.AMnames[k]) {
                 match = this.AMnames[k];
                 mk = k;
@@ -174,43 +302,47 @@ export abstract class Parser {
         this.AMpreviousSymbol = this.AMcurrentSymbol;
         if (match != "") {
             this.AMcurrentSymbol = this.AMsymbols[mk].ttype;
-            return this.AMsymbols[mk];
-        }
-        // if str[0] is a digit or - return maxsubstring of digits.digits
-        this.AMcurrentSymbol = CONST;
-        k = 1;
-        st = str.slice(0, 1);
-        var integ = true;
-        while ("0" <= st && st <= "9" && k <= str.length) {
-            st = str.slice(k, k + 1);
-            k++;
-        }
-        if (st == this.decimalsign) {
-            st = str.slice(k, k + 1);
-            if ("0" <= st && st <= "9") {
-                integ = false;
+            ret = this.AMsymbols[mk];
+        } else {
+            // if str[0] is a digit or - return maxsubstring of digits.digits
+            this.AMcurrentSymbol = CONST;
+            k = 1;
+            st = str.slice(0, 1);
+            var integ = true;
+            while ("0" <= st && st <= "9" && k <= str.length) {
+                st = str.slice(k, k + 1);
                 k++;
-                while ("0" <= st && st <= "9" && k <= str.length) {
-                    st = str.slice(k, k + 1);
+            }
+            if (st == this.decimalsign) {
+                st = str.slice(k, k + 1);
+                if ("0" <= st && st <= "9") {
+                    integ = false;
                     k++;
+                    while ("0" <= st && st <= "9" && k <= str.length) {
+                        st = str.slice(k, k + 1);
+                        k++;
+                    }
                 }
             }
-        }
-        if ((integ && k > 1) || k > 2) {
-            st = str.slice(0, k - 1);
-            tagst = "mn";
-        } else {
-            k = 2;
-            st = str.slice(0, 1); //take 1 character
-            tagst = (("A" > st || st > "Z") && ("a" > st || st > "z") ? "mo" : "mi");
-        }
-        if (st == "-" && str.charAt(1) !== ' ' && this.AMpreviousSymbol == INFIX) {
-            this.AMcurrentSymbol = INFIX;  //trick "/" into recognizing "-" on second parse
-            return { input: st, tag: tagst, output: st, ttype: UNARY, func: true };
-        }
-        return { input: st, tag: tagst, output: st, ttype: CONST };
-    }
+            if ((integ && k > 1) || k > 2) {
+                st = str.slice(0, k - 1);
+                tagst = "mn";
+            } else {
+                k = 2;
+                st = str.slice(0, 1); //take 1 character
+                tagst = (("A" > st || st > "Z") && ("a" > st || st > "z") ? "mo" : "mi");
+            }
+            if (st == "-" && str.charAt(1) !== ' ' && this.AMpreviousSymbol == INFIX) {
+                this.AMcurrentSymbol = INFIX;  //trick "/" into recognizing "-" on second parse
+                ret = { input: st, tag: tagst, output: st, ttype: UNARY, func: true };
 
+            } else {
+                ret = { input: st, tag: tagst, output: st, ttype: CONST };
+            }
+        }
+        if (debug) console.log(ret)
+        return ret
+    }
     AMremoveBrackets(node) {
         var st;
         if (!node.hasChildNodes()) { return; }
@@ -237,9 +369,10 @@ export abstract class Parser {
     Each terminal symbol is translated into a corresponding mathml node.*/
 
 
-    AMparseSexpr(str) { //parses str and returns [node,tailstr]
-        var symbol, node, result, i, st,// rightvert = false,
-            newFrag = document.createDocumentFragment();
+    /** Simple Expressions  x+1  (x+1)  sqrt(x+1)  frac(x+1)(x+2)  */
+    AMparseSexpr(str: string) { //parses str and returns [node,tailstr]
+        var symbol, node, result, i, st// rightvert = false,
+        let newFrag = document.createDocumentFragment();
         str = this.AMremoveCharsAndBlanks(str, 0);
         symbol = this.AMgetSymbol(str);             //either a token or a bracket or empty
         if (symbol == null || symbol.ttype == RIGHTBRACKET && this.AMnestingDepth > 0) {
@@ -595,7 +728,9 @@ export abstract class Parser {
         return [newFrag, str];
     }
 
-    parseMath(str, latex?) {
+    parseMath(str, latex = false) {
+        if (debug) console.groupCollapsed(`%c${str}`, 'background-color:blue')
+
         var frag, node;
         this.AMnestingDepth = 0;
         //some basic cleanup for dealing with stuff editors like TinyMCE adds
@@ -617,6 +752,9 @@ export abstract class Parser {
         if (this.displaystyle) node.setAttribute("displaystyle", "true");
         node = this.createMmlNode("math", node);
         node.setAttribute("title", str.replace(/\s+/g, " "));//does not show in Gecko
+
+        if (debug) console.groupEnd()
+
         return node;
     }
 
@@ -748,7 +886,6 @@ export abstract class Parser {
 
 
     substituteGlyphs(str: string, font: string): string {
-        console.log(str, font)
         if (str == null) return '';
 
         // font table from https://github.com/beizhedenglong/weird-fonts
@@ -787,10 +924,8 @@ export abstract class Parser {
         let glyphString = ''
         Array.from(str).forEach(char => {
             let glyphIndex = fonts["serif.normal"].indexOf(char);  // index of chars we can substitute
-            console.log(char, glyphIndex);
             glyphString += (glyphIndex >= 0 && fonts[glyphFont].length > glyphIndex) ? fonts[glyphFont][glyphIndex] : char// substitute if index found
         });
-        console.log(glyphString)
 
         return glyphString
     }
