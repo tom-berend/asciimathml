@@ -14,61 +14,67 @@ export function test() {
         let tr = document.createElement('tr')
         div.appendChild(tr);
 
-        ['plaintext', 'TS', 'original JS', 'comment'].map((title) => {
+        ['plaintext', 'TS', 'original JS', 'StringInsert', 'comment'].map((title) => {
             let th = document.createElement('th')
             th.innerHTML = title
             tr.appendChild(th)
         })
 
 
-        appnd(div, `obrace log(x) cc log(x)`)
-        appnd(div, `obrace log(x) obrace cc log(x)`)
-        appnd(div, `log(x) cc "log(x)"`)
-        appnd(div, `log(x) cc log(x)`)
+        // appnd(div, `obrace log(x) cc log(x)`)
+        // appnd(div, `obrace log(x) obrace cc log(x)`)
+        // appnd(div, `log(x) cc "log(x)"`)
+        // appnd(div, `log(x) cc log(x)`)
 
-        appnd(div, '')
+        // appnd(div, '')
 
-        appnd(div, `log(x)`)
-        appnd(div, `bb log(x)`)
-        appnd(div, `bb log x`)
-        appnd(div, `bb log bb`)
-        appnd(div, `"(x)"`)
-        appnd(div,`log(x) bb`)
-
-
-        appnd(div, '')
-        appnd(div, `"abc 01239 $%*"`)
-        appnd(div, `bb "abc 01239 $%*"`)
-        appnd(div, `bbb "abc 01239 $%*"`)
-        appnd(div, `tt "abc 01239 $%*"`)
-        appnd(div, `fr "abc 01239 $%*"`)
-        appnd(div, `sf "abc 01239 $%*"`)
-
-        appnd(div, '')
-        appnd(div, `bb(bracket bold AaBbCc)`)
-        appnd(div, `mathbf(bracket bold AaBbCc)`)
-        appnd(div, 'bb "literal bold AaBbCc"')
-        appnd(div, 'mathbf "literal bold AaBbCc"')
-        appnd(div, '')
-        appnd(div, '"AaBbCc literal"')
-        appnd(div, 'bb "AaBbCc bold"')
-        appnd(div, 'bbb "AaBbCc dbl-struck"')
-        appnd(div, 'cc "AaBbCc script"')
-        appnd(div, 'tt "AaBbCc mono"')
-        appnd(div, 'fr "AaBbCc frakur"')
-        appnd(div, 'sf "AaBbCc sanserif"')
+        // appnd(div, `log(x)`)
+        // appnd(div, `bb log(x)`)
+        // appnd(div, `bb log x`)
+        // appnd(div, `bb log bb`)
+        // appnd(div, `"(x)"`)
+        // appnd(div,`log(x) bb`)
 
 
-        appnd(div, `"Literal non-italic"`)
+        // appnd(div, '')
+        // appnd(div, `"abc 01239 $%*"`)
+        // appnd(div, `bb "abc 01239 $%*"`)
+        // appnd(div, `bbb "abc 01239 $%*"`)
+        // appnd(div, `tt "abc 01239 $%*"`)
+        // appnd(div, `fr "abc 01239 $%*"`)
+        // appnd(div, `sf "abc 01239 $%*"`)
 
-        appnd(div, '')
+        // appnd(div, '')
+        // appnd(div, `bb(bracket bold AaBbCc)`)
+        // appnd(div, `mathbf(bracket bold AaBbCc)`)
+        // appnd(div, 'bb "literal bold AaBbCc"')
+        // appnd(div, 'mathbf "literal bold AaBbCc"')
+        // appnd(div, '')
+        // appnd(div, '"AaBbCc literal"')
+        // appnd(div, 'bb "AaBbCc bold"')
+        // appnd(div, 'bbb "AaBbCc dbl-struck"')
+        // appnd(div, 'cc "AaBbCc script"')
+        // appnd(div, 'tt "AaBbCc mono"')
+        // appnd(div, 'fr "AaBbCc frakur"')
+        // appnd(div, 'sf "AaBbCc sanserif"')
 
 
-        appnd(div, `(cancel((x + 1))(x - 2)) / (cancel((x + 1))(x + 3))`, 'what happened to cancel?')
+        // appnd(div, `"Literal non-italic"`)
+
+        // appnd(div, '')
 
 
-        appnd(div, '\\alpha  \\beta  \\gamma', `\\\\alpha in javascript`)
+        // appnd(div, `(cancel((x + 1))(x - 2)) / (cancel((x + 1))(x + 3))`, 'what happened to cancel?')
 
+
+        appnd(div, 'abc')
+        appnd(div, 'alpha  beta  gamma')
+        appnd(div, 'vec x')
+        appnd(div, 'vec alpha')
+        appnd(div, 'NN')
+        appnd(div, 'tan x')
+        appnd(div, 'tan x tan y')
+        appnd(div, 'norm(vec x)')
         /*
                 appnd(div, 'sum_(i=1)^n i^3=((n(n+1))/2)^2')
                 appnd(div, `x ^ 2 + y_1 + z_12 ^ 34`)
@@ -264,17 +270,30 @@ function appnd(div: HTMLElement, expr: string, comment: string = '') {
 
     // let old asciimathml convert this one
     let td3 = document.createElement('td')
-    td3.innerHTML = '`' + expr
+    td3.innerHTML = '`' + expr + '`'
     tr.appendChild(td3)
+
+    let big = `<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mo>∫</mo><mn>0</mn><mn>1</mn></msubsup><msup><mi>u</mi><mn>4</mn></msup><mo>−</mo><mn>2</mn><msup><mi>u</mi><mn>3</mn></msup><mo>+</mo><mn>5</mn><msup><mi>u</mi><mn>2</mn></msup><mo>+</mo><mn>4</mn><mi>d</mi><mi>u</mi><mo>=</mo><msubsup><mrow><mo>[</mo><mrow><mfrac><msup><mi>u</mi><mn>5</mn></msup><mn>5</mn></mfrac><mo>−</mo><mn>2</mn><mfrac><msup><mi>u</mi><mn>4</mn></msup><mn>4</mn></mfrac><mo>+</mo><mn>5</mn><mfrac><msup><mi>u</mi><mn>3</mn></msup><mn>3</mn></mfrac><mo>+</mo><mn>4</mn><mi>u</mi></mrow><mo>]</mo></mrow><mrow><mi>u</mi><mo>=</mo><mn>0</mn></mrow><mn>1</mn></msubsup><mo>=</mo><mfrac><mn>161</mn><mn>30</mn></mfrac></mrow><annotation encoding="TeX">
+      \int_0^{1} u^4 - 2u^3 + 5u^2 + 4 du =
+      \left[ \frac{u^5}{5} - 2 \frac{u^4}{4} + 5 \frac{u^3}{3} + 4u \right]_{u=0}^1 =
+      \frac{161}{30}
+    </annotation></semantics></math>`
+
+    // let mathjax convert this one
+    let td4 = document.createElement('td')
+    td4.innerHTML = am.naiveParser(expr)
+    tr.appendChild(td4)
 
     // td2.appendChild(am.parseMath(expr))
     // let p =  document.createElement('p')
     // p.innerHTML = 'tom'
     // td2.appendChild(p)
 
-    let td4 = document.createElement('td')
-    tr.appendChild(td4)
-    td4.innerHTML = comment
+    let td5 = document.createElement('td')
+    tr.appendChild(td5)
+    let rOut = am.lexScanner(expr)
+    let rOut2 = JSON.stringify(rOut).replaceAll('],',']<br/>')
 
+    td5.innerHTML = comment + rOut2
 }
 

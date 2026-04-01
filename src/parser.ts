@@ -95,82 +95,220 @@ export abstract class Parser {
 
     testLexScanner() {
         console.log('testing LexScanner')
-        let tests = [
-            ['ab{cd}ef', `[ab,-1][{,-2][cd,-1][},-3][ef,-1]`],
-            ['{cd}ef', `[{,-2][cd,-1][},-3][ef,-1]`],
-            ['ab{cd}', `[ab,-1][{,-2][cd,-1][},-3]`],
-            ['\\frac{cd}', `[\\frac,55][{,-2][cd,-1][},-3]`],
-            ['\\{ { and } \\}', `[\\{ ,-1][{,-2][ and ,-1][},-3][ \\},-1]`],
+        let cOp = 119, cCl = 120  // curly brackets, but might move one day
+        let rOp = 115, rCl = 116
+        let x = (s: string) => this.AMsymbols.findIndex((symbol) => symbol.input === s || symbol.tex === s)
+        let tests: [string, [string, number][]][] = [
+            ['ab{cd}ef', [['ab', -1], ['{', cOp], ['cd', -1], ['}', cCl], ['ef', -1]]],
+            ['{cd}ef', [['{', cOp], ['cd', -1], ['}', cCl], ['ef', -1]]],
+            ['ab{cd}', [['ab', -1], ['{', cOp], ['cd', -1], ['}', cCl]]],
+            ['frac{cd}', [['frac', 240], ['{', cOp], ['cd', -1], ['}', cCl]]],
+            ['"hi"', [['hi', -1]]],
+            ['"\\{ { and } \\}"', [['\\{ { and } \\}', -1]]],
+            ['(x:} {:x)', [['(', rOp], ['x', -1], [':}', x(':}')], ['{:', x('{:')], ['x', -1], [')', rCl]]],
+            ['bigvee', [['vvv', x('vvv')]]],    // converts TEX notation
+            ['alpha beta gamma junk', [["alpha",0],["beta",1],["gamma",8],["junk",-1]]],    // converts TEX notation
         ]
 
         tests.map((test) => {
-            let results = this.lexScanner(test[0])
-            let resultStr = ''
-            results.map((token) => resultStr += `[${token[0]},${token[1]}]`)
-            console.assert(resultStr === test[1], `Fails on ${test[0]} expected ${test[1]} got ${resultStr}`)
-            // console.log(test[1])
-            // console.log(resultStr)
+            let results = this.lexScanner(test[0])  // run the test
+
+            let r_in = JSON.stringify(test[1])
+            let r_out = JSON.stringify(results)
+
+            if (r_in != r_out) {
+                console.assert(r_in === r_out, `Fails on ${test[0]} expected ${r_in} got ${r_out} `)
+                console.log(r_in)
+                console.log(r_out)
+            }
         })
     }
 
 
 
-    /** returns an array of string-index pairs, either curly/-1 or unknown/2 or cmd/index */
-    //  \sqrt[2]{n+1} has a parameter and an argument
-    //  If you want curly bracket, use \{ (-2) and \} (-3).
-    //  Square brackets aren't a problem, the parser figures it out.
-    //  outputs tokens [lex, -1/-2/-3/index]
-    //  whitespace is NOT trimmed yet
+    /** returns an array of string-index pairs, either ['string',-1] or  ['{',-2] or ['}',cCl] or or ['cmd',index] */
+    //  If you want curly bracket in a string, use double quotes
+    //  outputs tokens [lex, -1/index]  with -1 text
+    //  whitespace is trimmed from strings unless quoted
     lexScanner(text: string): [string, number][] {
 
-        // macro that takes a snip and returns either [snip, index] or [snip, LEX_STRING] depending on value
-        let snip = (snip: string): LEX_TOKEN => {
-            let index = this.AMsymbols.findIndex((symbol) => symbol.input === snip)
-            if (index == -1)    // not in symbol table
-                return [snip, LEX_STRING]
-            else
-                return [snip, index]
-        }
-
         // walk character-by-character and pull out the snips
-        let curly = ['}', '{']
+        let curly = ['}', '{', ' ', '(', ')']  // break on curly or space
         let pos = 0
         let tokens: LEX_TOKEN[] = [] //text, lexScanner value or index of amssymbol
+        let inQuotedString = false
 
         let tokenStart = pos
         while (pos < text.length) {
             let ch = text.charAt(pos);
 
-            // special case for \ (so we can process \{ and \}
-            if (ch == '\\' && pos < (text.length - 1)) {   //  \ and not-last-character
-                if (curly.includes(text.slice(pos + 1, pos + 2))) { // escaped curly
-                    pos += 2    // just skip over / and curly
-                    continue;
+            // most of this function is worrying about quoted strings
+            if (inQuotedString) {
+                if (ch === '"') {  // close a quoted string
+                    tokens.push([text.slice(tokenStart, pos), -1])   // push the string up to the quote
+                    inQuotedString = false
+                    tokenStart = pos + 1   // skip over the quote, not added to the token
+                }
+                // else just continue collecting
+
+            } else {  // not in quoted string
+
+                if (ch === '"') {   // open a quoted string
+                    if (tokenStart < pos - 1) {    // nothing between this and previous token
+                        tokens.push(this.lexScannerSnip(text.slice(tokenStart, pos)))
+                    }
+                    tokenStart = pos + 1  // skip over the quote
+                    inQuotedString = true
                 }
 
-            }
-
-            // always break on a curly
-            if (curly.includes(ch)) {
-                if (tokenStart == pos) {    // nothing between this and previous token
-                    tokens.push([ch, curly.indexOf(ch) - 3])  // translates 0,1 to -3,-2
-                } else {
-                    tokens.push(snip(text.slice(tokenStart, pos)))
-                    tokens.push([ch, curly.indexOf(ch) - 3])       // also push the curly
+                // always break on a space (not in a quoted string)
+                if (ch === ' ') {
+                    tokens.push(this.lexScannerSnip(text.slice(tokenStart, pos)))
+                    tokenStart = pos + 1    // skip over the space
                 }
-                pos += 1
-                tokenStart = pos
-            }
 
-            pos += 1  // just keep collection
+                // break on change from symbol to alphabet
+                if (pos > tokenStart && this.containsOnlyLetters(text.slice(tokenStart, pos)) !== this.containsOnlyLetters(ch)) {
+                    tokens.push(this.lexScannerSnip(text.slice(tokenStart, pos)))
+                    tokenStart = pos   // start new token
+                }
+            }
+            pos += 1  // just keep collecting
         }
+
+        // we are at the end of the string
         if (tokenStart < text.length) {    // any remainder not accounted for?
             let cmd = text.slice(tokenStart)
-            tokens.push(snip(text.slice(tokenStart)))
+            tokens.push(this.lexScannerSnip(text.slice(tokenStart)))
 
         }
         return tokens
     }
+    // helper that takes a snip and returns either [snip, index] or [snip, LEX_STRING] depending on value
+    lexScannerSnip(snip: string): LEX_TOKEN {
+        let index = this.AMsymbols.findIndex((symbol) => symbol.input === snip || symbol.tex === snip)
+        if (index === -1) {    // not in symbol table
+            return [snip, LEX_STRING]   // command
+        } else {
+            return [this.AMsymbols[index].input, index]  // a command from the table (always AM, not TEX)
+        }
+    }
+    // helper for detecting break between alphas and symbols (assumes no Symbol contains both)
+    containsOnlyLetters(str) {
+        return /^[A-Za-z]+$/.test(str);
+    }
+
+
+    ////////////////////////////////////
+    ////////////////////////////////////
+    ////////////////////////////////////
+
+
+    naiveParser(str: string): string {
+        let output = '';
+
+        // output += `<math display="block" xmlns="http://www.w3.org/1998/Math/MathML" title="${str}">`
+        output += `<math title="${str}">`
+        // output += `<semantics></semantics>`
+        output += `<mstyle mathcolor="blue" fontsize="1em" mathsize="1em" fontfamily="serif" mathvariant="serif" displaystyle="true">`
+        output += `<mrow>`
+
+
+        let lex = this.lexScanner(str)
+        console.log(lex)
+        let i = 0
+        let result = this.naiveParser2(lex, i)   // returns [string,next]
+        output += result[0]
+
+        output += `</mrow>`
+        output += `</mstyle>`
+        output += `</math>`
+        return output
+    }
+
+
+    /**  returns parsed string and index of NEXT token */
+    naiveParser2(lex: [string, number][], index: number): [string, number] {
+        let output = ''
+        let sym = (i) => this.AMsymbols[i]  // lookup function
+
+        let safety = 0
+        while (index < lex.length) {
+            safety += 1
+            if (safety > 10) {
+                console.error('safety', index, lex[index])
+                index += 1
+                return ['', index]
+            }
+
+
+            if (lex[index][1] == -1) {
+                let charArray = lex[index][0].split('')
+                charArray.forEach(char => { output += `<mi>` + char + `</mi>` });
+                index += 1
+
+            } else {
+                let symbol = sym(lex[index][1])   // the lex we are looking at
+
+                switch (symbol.ttype) {
+                    case CONST:
+                        output += `<mi>` + symbol.output + `</mi>`
+                        index += 1
+                        break;
+
+                    case UNARY:
+                        // functions are different from non-functions
+                        if (symbol.func)
+                            output += `<${symbol.tag}>${symbol.output}</${symbol.tag}>`  // eg: tan
+                        else
+                            output += `<${symbol.tag}>`  // eg: vec
+
+                        // operates on something.  two cases:  literal or something we handle recursively
+                        if (lex[index + 1][1] == -1) {  // literal
+                            let charArray = lex[index + 1][0].split('')
+                            charArray.forEach(char => { output += `<mi>` + char + `</mi>` });
+                            index += 2  // skip over
+                        } else {    // recursive case
+                            let result = this.naiveParser2(lex, index + 1)
+                            output += result[0]
+                            index = result[1]
+                        }
+                        if (!symbol.func) {  // second part of non-func eg: vec
+                            output += `<${symbol.tag}>`  // <mover>
+                            output += `<mi>` + symbol.output + `</mi>`
+                            output + `</${symbol.output}`
+                        }
+                        index += 1
+                        break;
+
+                    case LEFTBRACKET:
+                        index += 1
+                        return ['', index]
+
+                    case RIGHTBRACKET:
+                        index += 1
+                        return ['', index]
+
+
+                    default:
+                        index += 1  // safety
+                }
+
+            }
+
+
+        }
+        return [output, index]
+
+
+    }
+
+
+
+
+
+
+
 
 
 
@@ -291,7 +429,7 @@ export abstract class Parser {
         for (var i = 1; i <= str.length && more; i++) {
             st = str.slice(0, i); //initial substring of length i
             j = k;
-
+            k = this.position(this.AMnames, st, j);
             if (k < this.AMnames.length && str.slice(0, this.AMnames[k].length) == this.AMnames[k]) {
                 match = this.AMnames[k];
                 mk = k;
@@ -729,7 +867,7 @@ export abstract class Parser {
     }
 
     parseMath(str, latex = false) {
-        if (debug) console.groupCollapsed(`%c${str}`, 'background-color:blue')
+        if (debug) console.groupCollapsed(`% c${str} `, 'background-color:blue')
 
         var frag, node;
         this.AMnestingDepth = 0;
