@@ -20,6 +20,8 @@ export function test() {
             tr.appendChild(th)
         })
 
+        /*
+        */
         subtitle(div,'letters and symbols')
         appnd(div, 'abc')
         appnd(div, 'alpha  beta  gamma')

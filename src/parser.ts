@@ -219,6 +219,7 @@ export abstract class Parser {
         let index = 0
         let safety = 0
         while (index < lex.length) {
+            console.log('%cmainloop', 'background-color:blue;',index, JSON.stringify(lex[index]))
             safety += 1
             if (safety > 10) {
                 throw new Error('endless loop')
@@ -241,19 +242,18 @@ export abstract class Parser {
         let sym = (i) => this.AMsymbols[i]  // lookup function
 
 
-        if(index>=lex.length){
-            console.warn('all done',lex,index)
-            return['',index]
+        if (index >= lex.length) {
+            console.warn('all done', lex, index)
+            return ['', index]
         }
 
 
-        if (lex[index][1] == -1) {
-            return this.singleToken(lex, index)
-            // output += charstr[0]
-            // index = charstr[1]
-            // return
-
+        if (lex[index][1] == -1) {  // literal
+            let charArray = lex[index][0].split('')
+            charArray.forEach(char => output += `<mi>` + char + `</mi>`);
+            return [output, index + 1]
         } else {
+
             let symb = sym(lex[index][1])   // the lex we are looking at
 
             switch (symb.ttype) {
@@ -289,23 +289,6 @@ export abstract class Parser {
     }
 
 
-
-    singleToken(lex, index):[string,number] {
-        let output = ''
-        // operates on something.  two cases:  literal or something we handle recursively
-        if (lex[index][1] == -1) {  // literal
-            let charArray = lex[index][0].split('')
-            charArray.forEach(char => output += `<mi>` + char + `</mi>`);
-            index += 1  // skip over
-        } else {    // recursive case
-            let result = this.naiveParser2(lex, index + 1)
-            output += result[0]
-            index = result[1]
-        }
-        return [output, index]
-
-    }
-
     /** handle unary symbols */
     unary(lex, index) {
         // either func:true (sin, tilde) or acc:true
@@ -319,13 +302,13 @@ export abstract class Parser {
 
         if (symbol.func) {               // eg tan
             output += `<${symbol.tag}>${symbol.output}</${symbol.tag}>`  // eg: tan
-            let func = this.singleToken(lex, index + 1)
+            let func = this.naiveParser2(lex, index + 1)
             output += func[0]
             index = func[1] + 1
 
         } else if (symbol.acc) {        // eg; vec
             output += `<${symbol.tag}>`  // mover
-            let acc = this.singleToken(lex, index + 1)
+            let acc = this.naiveParser2(lex, index + 1)
             output += acc[0]
             index = acc[1]
             output += `<mo>` + symbol.output + `</mo>`
@@ -516,7 +499,7 @@ export abstract class Parser {
                 ret = { input: st, tag: tagst, output: st, ttype: CONST };
             }
         }
-        if (debug) console.log(ret)
+        // if (debug) console.log(ret)
         return ret
     }
     AMremoveBrackets(node) {
@@ -905,7 +888,7 @@ export abstract class Parser {
     }
 
     parseMath(str, latex = false) {
-        if (debug) console.groupCollapsed(`% c${str} `, 'background-color:blue')
+        // if (debug) console.groupCollapsed(`% c${str} `, 'background-color:blue')
 
         var frag, node;
         this.AMnestingDepth = 0;
@@ -929,7 +912,7 @@ export abstract class Parser {
         node = this.createMmlNode("math", node);
         node.setAttribute("title", str.replace(/\s+/g, " "));//does not show in Gecko
 
-        if (debug) console.groupEnd()
+        // if (debug) console.groupEnd()
 
         return node;
     }
