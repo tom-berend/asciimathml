@@ -218,16 +218,20 @@ export abstract class Parser {
         console.log(lex)
         let index = 0
         let safety = 0
+
         while (index < lex.length) {
-            console.log('%cmainloop', 'background-color:blue;',index, JSON.stringify(lex[index]))
+            console.log(`%cmainloop ${str}`, 'background-color:blue;', index, JSON.stringify(lex[index]))
             safety += 1
             if (safety > 10) {
                 throw new Error('endless loop')
             }
 
             let result = this.naiveParser2(lex, index)   // returns [string,next]
+            console.log('   adding ', result[0], `new index ${result[1]}`)
             output += result[0]
             index = result[1]
+            console.log('%cmainloop', 'background-color:blue;', index, JSON.stringify(lex[index]))
+
         }
         output += `</mrow>`
         output += `</mstyle>`
@@ -239,50 +243,50 @@ export abstract class Parser {
     /**  returns parsed string and index of NEXT token */
     naiveParser2(lex: [string, number][], index: number): [string, number] {
         let output = ''
-        let sym = (i) => this.AMsymbols[i]  // lookup function
+        console.warn('  arrive in recursive', index, JSON.stringify(lex[index]))
 
 
-        if (index >= lex.length) {
-            console.warn('all done', lex, index)
-            return ['', index]
-        }
+        // if (index >= lex.length) {
+        //     console.warn('all done', lex, index)
+        //     return ['', index]
+        // }
 
 
-        if (lex[index][1] == -1) {  // literal
+        if (lex[index][1] === -1) {  // literal, no symb available
             let charArray = lex[index][0].split('')
             charArray.forEach(char => output += `<mi>` + char + `</mi>`);
             return [output, index + 1]
+
         } else {
 
-            let symb = sym(lex[index][1])   // the lex we are looking at
+            let symb = this.AMsymbols[lex[index][1]]   // the lex we are looking at
+            console.log('symb in recursive',symb)
 
             switch (symb.ttype) {
                 case CONST:
-                    output += `<${symb.tag}>` + symb.output + `</${symb.tag}>`
-                    index += 1
-                    return [output, index]
+                    output = `<${symb.tag}>` + symb.output + `</${symb.tag}>`
+                    return [output, index + 1]
 
                 case UNARY:
                     let u = this.unary(lex, index)
-                    output += u[0]
-                    index = u[1]
-                    return [output, index]
+                    console.log('unary returns ',u[0],u[1])
+                    return [u[0], u[1]]      // moves forward in unary
 
                 case LEFTBRACKET:
-                    index += 1
-                    return ['', index]
+                    // index += 1
+                    return ['', index + 1]
 
                 case RIGHTBRACKET:
-                    index += 1
-                    return ['', index]
+                    // index += 1
+                    return ['', index + 1]
 
                 default:
                     console.log(symb)
-                    return ['', index]
+                    return ['', index + 1]
             }
 
         }
-
+        throw new Error('never get here')
 
 
 
@@ -290,39 +294,41 @@ export abstract class Parser {
 
 
     /** handle unary symbols */
-    unary(lex, index) {
+    unary(lex:[string,number][], index:number): [string, number] {
         // either func:true (sin, tilde) or acc:true
         //    or neither (sqrt & cancel)
         //    or notexcopy and rewriteleftright (abs)
         //    or rewriteleftright (floor, norm)
         //    or codes (bb)
         //
-        let symbol = this.AMsymbols[lex[index][1]]   // the lex we are looking at
+        let symb = this.AMsymbols[lex[index][1]]   // the lex we are looking at
         let output = ''
+        console.warn('  unary', index, JSON.stringify(lex[index]))
 
-        if (symbol.func) {               // eg tan
-            output += `<${symbol.tag}>${symbol.output}</${symbol.tag}>`  // eg: tan
-            let func = this.naiveParser2(lex, index + 1)
+        if (symb.func) {               // eg tan
+            console.log('func',index)
+            output += `<${symb.tag}>${symb.output}</${symb.tag}>`  // eg: tan
+            let func = this.naiveParser2(lex, index+1 )    // argument for tan
             output += func[0]
-            index = func[1] + 1
+            index = func[1]
 
-        } else if (symbol.acc) {        // eg; vec
-            output += `<${symbol.tag}>`  // mover
-            let acc = this.naiveParser2(lex, index + 1)
+        } else if (symb.acc) {        // eg; vec
+            output += `<${symb.tag}>`  // mover
+            let acc = this.naiveParser2(lex, index+1 )
             output += acc[0]
-            index = acc[1]
-            output += `<mo>` + symbol.output + `</mo>`
-            output += `</${symbol.tag}>`  // <mover>
+            index = acc[1] 
+            output += `<mo>` + symb.output + `</mo>`
+            output += `</${symb.tag}>`  // <mover>
 
-        } else if (symbol.rewriteleftright)
+        } else if (symb.rewriteleftright) {
             output += ''
-        else if (symbol.codes)
+        } else if (symb.codes) {
             output += ''
-        else
+        } else {
             throw new Error('unary')
+        }
 
-        index += 1
-
+        // index += 1
         return [output, index]
     }
 
