@@ -28,16 +28,19 @@ export function test() {
         appnd(div, 'NN')
         appnd(div, 'NN ZZ')
 
-        */
         subtitle(div,'unary')
         appnd(div, 'vec x')      // acc is true
         appnd(div, 'vec alpha')
         appnd(div, 'vec alpha x')
         appnd(div, 'tan x')      // func is true
         appnd(div, 'tan x tan alpha')
+        appnd(div, 'tan vec x')
+        appnd(div, 'vec tan x')
+        */
+        appnd(div, 'norm x ') // rewriteleftright has two values
         appnd(div, 'norm(x)') // rewriteleftright has two values
-        // appnd(div, 'norm(alpha)')
-        // appnd(div, 'norm(vec x)')
+        appnd(div, 'norm(alpha)')
+        appnd(div, 'norm(vec x)')
 
 
         // appnd(div, `obrace log(x) cc log(x)`)

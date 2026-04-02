@@ -226,7 +226,7 @@ export abstract class Parser {
                 throw new Error('endless loop')
             }
 
-            let result = this.naiveParser2(lex, index)   // returns [string,next]
+            let result = this.recursiveParser(lex, index)   // returns [string,next]
             console.log('   adding ', result[0], `new index ${result[1]}`)
             output += result[0]
             index = result[1]
@@ -241,7 +241,7 @@ export abstract class Parser {
 
 
     /**  returns parsed string and index of NEXT token */
-    naiveParser2(lex: [string, number][], index: number): [string, number] {
+    recursiveParser(lex: [string, number][], index: number): [string, number] {
         let output = ''
         console.warn('  arrive in recursive', index, JSON.stringify(lex[index]))
 
@@ -308,20 +308,32 @@ export abstract class Parser {
         if (symb.func) {               // eg tan
             console.log('func',index)
             output += `<${symb.tag}>${symb.output}</${symb.tag}>`  // eg: tan
-            let func = this.naiveParser2(lex, index+1 )    // argument for tan
+            let func = this.recursiveParser(lex, index+1 )    // argument for tan
             output += func[0]
             index = func[1]
 
         } else if (symb.acc) {        // eg; vec
             output += `<${symb.tag}>`  // mover
-            let acc = this.naiveParser2(lex, index+1 )
+
+            output += `<mrow>`
+            let acc = this.recursiveParser(lex, index+1 )
             output += acc[0]
-            index = acc[1] 
+            index = acc[1]
+            output += `</mrow>`
+
             output += `<mo>` + symb.output + `</mo>`
             output += `</${symb.tag}>`  // <mover>
 
         } else if (symb.rewriteleftright) {
-            output += ''
+            console.log('rewrite')
+            output += `<mrow>`
+            output += `<mo>` + symb.rewriteleftright[0] + `</mo>`
+            let acc = this.recursiveParser(lex, index+1 )
+            output += acc[0]
+            index = acc[1]
+            output += `<mo>` + symb.rewriteleftright[1] + `</mo>`
+            output += `</mrow>`
+
         } else if (symb.codes) {
             output += ''
         } else {
