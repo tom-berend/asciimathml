@@ -14,11 +14,27 @@ export function test() {
         let tr = document.createElement('tr')
         div.appendChild(tr);
 
-        ['plaintext', 'TS', 'original JS', 'StringInsert', 'comment'].map((title) => {
+        ['plaintext', 'TS', 'original JS', 'StringInsert', 'tokens','output'].map((title) => {
             let th = document.createElement('th')
             th.innerHTML = title
             tr.appendChild(th)
         })
+
+        subtitle(div,'letters and symbols')
+        appnd(div, 'abc')
+        appnd(div, 'alpha  beta  gamma')
+        appnd(div, 'NN')
+        appnd(div, 'NN ZZ')
+
+        subtitle(div,'unary')
+        appnd(div, 'vec x')      // acc is true
+        appnd(div, 'vec alpha')
+        appnd(div, 'vec alpha x')
+        appnd(div, 'tan x')      // func is true
+        appnd(div, 'tan x tan alpha')
+        appnd(div, 'norm(x)') // rewriteleftright has two values
+        appnd(div, 'norm(alpha)')
+        appnd(div, 'norm(vec x)')
 
 
         // appnd(div, `obrace log(x) cc log(x)`)
@@ -66,15 +82,6 @@ export function test() {
 
         // appnd(div, `(cancel((x + 1))(x - 2)) / (cancel((x + 1))(x + 3))`, 'what happened to cancel?')
 
-
-        appnd(div, 'abc')
-        appnd(div, 'alpha  beta  gamma')
-        appnd(div, 'vec x')
-        appnd(div, 'vec alpha')
-        appnd(div, 'NN')
-        appnd(div, 'tan x')
-        appnd(div, 'tan x tan y')
-        appnd(div, 'norm(vec x)')
         /*
                 appnd(div, 'sum_(i=1)^n i^3=((n(n+1))/2)^2')
                 appnd(div, `x ^ 2 + y_1 + z_12 ^ 34`)
@@ -253,6 +260,16 @@ appnd(div, 'a = 2pir^2')
 
 }
 
+function subtitle(div:HTMLElement,title:string){
+    let tr = document.createElement('tr')
+    div.appendChild(tr)
+    let td = document.createElement('td')
+    td.colSpan = 6
+    td.innerHTML = `<b>${title}</b>`
+    td.style = 'background-color:aliceblue';
+    tr.appendChild(td)
+}
+
 function appnd(div: HTMLElement, expr: string, comment: string = '') {
     let tr = document.createElement('tr')
     div.appendChild(tr)
@@ -304,7 +321,6 @@ function appnd(div: HTMLElement, expr: string, comment: string = '') {
     pOut2 = pOut2.replaceAll('<', '&lt;')   // neuter
     pOut2 = pOut2.replaceAll('>&lt;m', '><br>&lt;m')
     td6.innerHTML = pOut2
-
 
 }
 

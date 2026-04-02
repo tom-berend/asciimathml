@@ -107,7 +107,7 @@ export abstract class Parser {
             ['"\\{ { and } \\}"', [['\\{ { and } \\}', -1]]],
             ['(x:} {:x)', [['(', rOp], ['x', -1], [':}', x(':}')], ['{:', x('{:')], ['x', -1], [')', rCl]]],
             ['bigvee', [['vvv', x('vvv')]]],    // converts TEX notation
-            ['alpha beta gamma junk', [["alpha",0],["beta",1],["gamma",8],["junk",-1]]],    // converts TEX notation
+            ['alpha beta gamma junk', [["alpha", 0], ["beta", 1], ["gamma", 8], ["junk", -1]]],    // converts TEX notation
         ]
 
         tests.map((test) => {
@@ -216,10 +216,18 @@ export abstract class Parser {
 
         let lex = this.lexScanner(str)
         console.log(lex)
-        let i = 0
-        let result = this.naiveParser2(lex, i)   // returns [string,next]
-        output += result[0]
+        let index = 0
+        let safety = 0
+        while (index < lex.length) {
+            safety += 1
+            if (safety > 10) {
+                throw new Error('endless loop')
+            }
 
+            let result = this.naiveParser2(lex, index)   // returns [string,next]
+            output += result[0]
+            index = result[1]
+        }
         output += `</mrow>`
         output += `</mstyle>`
         output += `</math>`
@@ -232,80 +240,71 @@ export abstract class Parser {
         let output = ''
         let sym = (i) => this.AMsymbols[i]  // lookup function
 
-        let safety = 0
-        while (index < lex.length) {
-            safety += 1
-            if (safety > 10) {
-                console.error('safety', index, lex[index])
-                index += 1
-                return ['', index]
+
+        if(index>=lex.length){
+            console.warn('all done',lex,index)
+            return['',index]
+        }
+
+
+        if (lex[index][1] == -1) {
+            return this.singleToken(lex, index)
+            // output += charstr[0]
+            // index = charstr[1]
+            // return
+
+        } else {
+            let symb = sym(lex[index][1])   // the lex we are looking at
+
+            switch (symb.ttype) {
+                case CONST:
+                    output += `<${symb.tag}>` + symb.output + `</${symb.tag}>`
+                    index += 1
+                    return [output, index]
+
+                case UNARY:
+                    let u = this.unary(lex, index)
+                    output += u[0]
+                    index = u[1]
+                    return [output, index]
+
+                case LEFTBRACKET:
+                    index += 1
+                    return ['', index]
+
+                case RIGHTBRACKET:
+                    index += 1
+                    return ['', index]
+
+                default:
+                    console.log(symb)
+                    return ['', index]
             }
-
-
-            if (lex[index][1] == -1) {
-                let charArray = lex[index][0].split('')
-                charArray.forEach(char => { output += `<mi>` + char + `</mi>` });
-                index += 1
-
-            } else {
-                let symbol = sym(lex[index][1])   // the lex we are looking at
-
-                switch (symbol.ttype) {
-                    case CONST:
-                        output += `<mi>` + symbol.output + `</mi>`
-                        index += 1
-                        break;
-
-                    case UNARY:
-                        // functions are different from non-functions
-                        if (symbol.func)
-                            output += `<${symbol.tag}>${symbol.output}</${symbol.tag}>`  // eg: tan
-                        else
-                            output += `<${symbol.tag}>`  // eg: vec
-
-                        // operates on something.  two cases:  literal or something we handle recursively
-                        if (lex[index + 1][1] == -1) {  // literal
-                            let charArray = lex[index + 1][0].split('')
-                            charArray.forEach(char => { output += `<mi>` + char + `</mi>` });
-                            index += 2  // skip over
-                        } else {    // recursive case
-                            let result = this.naiveParser2(lex, index + 1)
-                            output += result[0]
-                            index = result[1]
-                        }
-                        if (!symbol.func) {  // second part of non-func eg: vec
-                            output += `<${symbol.tag}>`  // <mover>
-                            output += `<mi>` + symbol.output + `</mi>`
-                            output + `</${symbol.output}`
-                        }
-                        index += 1
-                        break;
-
-                    case LEFTBRACKET:
-                        index += 1
-                        return ['', index]
-
-                    case RIGHTBRACKET:
-                        index += 1
-                        return ['', index]
-
-
-                    default:
-                        index += 1  // safety
-                }
-
-            }
-
 
         }
-        return [output, index]
+
+
 
 
     }
 
 
 
+    singleToken(lex, index):[string,number] {
+        let output = ''
+        // operates on something.  two cases:  literal or something we handle recursively
+        if (lex[index][1] == -1) {  // literal
+            let charArray = lex[index][0].split('')
+            charArray.forEach(char => output += `<mi>` + char + `</mi>`);
+            index += 1  // skip over
+        } else {    // recursive case
+            let result = this.naiveParser2(lex, index + 1)
+            output += result[0]
+            index = result[1]
+        }
+        return [output, index]
 
+    }
 
     /** handle unary symbols */
     unary(lex, index) {
@@ -318,29 +317,30 @@ export abstract class Parser {
         let symbol = this.AMsymbols[lex[index][1]]   // the lex we are looking at
         let output = ''
 
-        // functions are different from non-functions
-        if (symbol.func)
+        if (symbol.func) {               // eg tan
             output += `<${symbol.tag}>${symbol.output}</${symbol.tag}>`  // eg: tan
-        else
-            output += `<${symbol.tag}>`  // eg: vec
+            let func = this.singleToken(lex, index + 1)
+            output += func[0]
+            index = func[1] + 1
 
-        // operates on something.  two cases:  literal or something we handle recursively
-        if (lex[index + 1][1] == -1) {  // literal
-            let charArray = lex[index + 1][0].split('')
-            charArray.forEach(char => { output += `<mi>` + char + `</mi>` });
-            index += 2  // skip over
-        } else {    // recursive case
-            let result = this.naiveParser2(lex, index + 1)
-            output += result[0]
-            index = result[1]
-        }
-        if (!symbol.func) {  // second part of non-func eg: vec
-            output += `<${symbol.tag}>`  // <mover>
-            output += `<mi>` + symbol.output + `</mi>`
-            output + `</${symbol.output}`
-        }
+        } else if (symbol.acc) {        // eg; vec
+            output += `<${symbol.tag}>`  // mover
+            let acc = this.singleToken(lex, index + 1)
+            output += acc[0]
+            index = acc[1]
+            output += `<mo>` + symbol.output + `</mo>`
+            output += `</${symbol.tag}>`  // <mover>
+
+        } else if (symbol.rewriteleftright)
+            output += ''
+        else if (symbol.codes)
+            output += ''
+        else
+            throw new Error('unary')
+
         index += 1
 
+        return [output, index]
     }
 
 
