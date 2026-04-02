@@ -281,7 +281,8 @@ function appnd(div: HTMLElement, expr: string, comment: string = '') {
 
     // let mathjax convert this one
     let td4 = document.createElement('td')
-    td4.innerHTML = am.naiveParser(expr)
+    let pOut = am.naiveParser(expr)
+    td4.innerHTML = pOut
     tr.appendChild(td4)
 
     // td2.appendChild(am.parseMath(expr))
@@ -292,8 +293,18 @@ function appnd(div: HTMLElement, expr: string, comment: string = '') {
     let td5 = document.createElement('td')
     tr.appendChild(td5)
     let rOut = am.lexScanner(expr)
-    let rOut2 = JSON.stringify(rOut).replaceAll('],',']<br/>')
+    let rOut2 = JSON.stringify(rOut).replaceAll('],', ']<br/>')
 
     td5.innerHTML = comment + rOut2
+
+    let td6 = document.createElement('td')
+    tr.appendChild(td6)
+    let pOut2 = pOut.slice(135+expr.length) // chop off the front
+    pOut2 = pOut2.slice(0, -23)   // chop off the end
+    pOut2 = pOut2.replaceAll('<', '&lt;')   // neuter
+    pOut2 = pOut2.replaceAll('>&lt;m', '><br>&lt;m')
+    td6.innerHTML = pOut2
+
+
 }
 

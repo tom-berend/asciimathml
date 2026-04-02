@@ -307,6 +307,44 @@ export abstract class Parser {
 
 
 
+    /** handle unary symbols */
+    unary(lex, index) {
+        // either func:true (sin, tilde) or acc:true
+        //    or neither (sqrt & cancel)
+        //    or notexcopy and rewriteleftright (abs)
+        //    or rewriteleftright (floor, norm)
+        //    or codes (bb)
+        //
+        let symbol = this.AMsymbols[lex[index][1]]   // the lex we are looking at
+        let output = ''
+
+        // functions are different from non-functions
+        if (symbol.func)
+            output += `<${symbol.tag}>${symbol.output}</${symbol.tag}>`  // eg: tan
+        else
+            output += `<${symbol.tag}>`  // eg: vec
+
+        // operates on something.  two cases:  literal or something we handle recursively
+        if (lex[index + 1][1] == -1) {  // literal
+            let charArray = lex[index + 1][0].split('')
+            charArray.forEach(char => { output += `<mi>` + char + `</mi>` });
+            index += 2  // skip over
+        } else {    // recursive case
+            let result = this.naiveParser2(lex, index + 1)
+            output += result[0]
+            index = result[1]
+        }
+        if (!symbol.func) {  // second part of non-func eg: vec
+            output += `<${symbol.tag}>`  // <mover>
+            output += `<mi>` + symbol.output + `</mi>`
+            output + `</${symbol.output}`
+        }
+        index += 1
+
+    }
+
+
+
 
 
 
