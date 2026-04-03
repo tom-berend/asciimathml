@@ -106,6 +106,7 @@ export abstract class Parser {
             ['(x:} {:x)', [['(', rOp], ['x', -1], [':}', x(':}')], ['{:', x('{:')], ['x', -1], [')', rCl]]],
             ['bigvee', [['vvv', x('vvv')]]],    // converts TEX notation
             ['alpha beta gamma junk', [["alpha", 0], ["beta", 1], ["gamma", 8], ["junk", -1]]],    // converts TEX notation
+            ['norm(x+.1)', [["norm", 194], ["(", 115], ["x", -1], ["+", -1], [".1", -1], [")", 116]]],    // numbers
         ]
 
         tests.map((test) => {
@@ -165,8 +166,10 @@ export abstract class Parser {
                     tokenStart = pos + 1    // skip over the space
                 }
 
-                // break on change from symbol to alphabet
-                if (pos > tokenStart && this.containsOnlyLetters(text.slice(tokenStart, pos)) !== this.containsOnlyLetters(ch)) {
+                // break on change from symbol to alphabet to numbers
+                if (pos > tokenStart && (
+                    this.containsOnlyLetters(text.slice(tokenStart, pos)) !== this.containsOnlyLetters(ch) ||
+                    this.containsOnlyNumbers(text.slice(tokenStart, pos)) !== this.containsOnlyNumbers(ch))) {
                     tokens.push(this.lexScannerSnip(text.slice(tokenStart, pos)))
                     tokenStart = pos   // start new token
                 }
@@ -194,6 +197,10 @@ export abstract class Parser {
     // helper for detecting break between alphas and symbols (assumes no Symbol contains both)
     containsOnlyLetters(str) {
         return /^[A-Za-z]+$/.test(str);
+    }
+    // helper for detecting break between alphas and symbols (assumes no Symbol contains both)
+    containsOnlyNumbers(str) {
+        return /-?[0-9.]+$/.test(str);
     }
 
 
@@ -257,15 +264,22 @@ export abstract class Parser {
             console.warn(`  constantEater`, index, JSON.stringify(lex[index]))
 
             if (lex[index][1] === -1) {  // literal, no symb available
-                let charArray = lex[index][0].split('')
-                charArray.forEach(char => output += `<mi>` + char + `</mi>`);
+                if (this.containsOnlyNumbers(lex[index][0])) {
+                    output += `<mn>` + lex[index][0] + `</mn>`;
+                } else {
+                    let charArray = lex[index][0].split('')
+                    charArray.forEach(char =>
+                        output += ['+', '/', '-', '*', '%'].includes(char) ? `<mo>${char}</mo>` : `<mi>${char}</mi>`
+                    );
+                }
             } else {
                 let symb = this.AMsymbols[lex[index][1]]   // the lex we are looking at
                 output += `<${symb.tag}>` + symb.output + `</${symb.tag}>`
             }
             index += 1
         }
-        return [output, index]
+
+        return ['<mrow>' + output + '</mrow>', index]
     }
 
 
@@ -303,24 +317,21 @@ export abstract class Parser {
                 case LEFTBRACKET:
                     if (calledFrom == 'func') {
                         let output = `<${symb.tag}>` + symb.output + `</${symb.tag}>`
-                        let inside = this.recursiveParser(lex, index + 1)
+                        let inside = this.recursiveParser(lex, index + 1, calledFrom)
                         output += inside[0]
                         index = inside[1]
-                        return [output,index]
+                        return [output, index]
 
                     } else {
                         // brackets do not go into output, only the insides
-                        let left = this.recursiveParser(lex, index + 1,)
+                        let left = this.recursiveParser(lex, index + 1, calledFrom)
                         return [left[0], left[1] + 1]
                     }
                 case RIGHTBRACKET:
-                    // if (calledFrom == 'func') {  // show a bracket or eat the close
-                        return [`<${symb.tag}>` + symb.output + `</${symb.tag}>`, index+1]
-                    // } else {
-                    //     let right = this.recursiveParser(lex, index + 1)
-                    //     return [right[0], right[1] + 1]
-                    // }
-
+                    if (calledFrom == 'func') {  // show a bracket or eat the close
+                        return [`<${symb.tag}>` + symb.output + `</${symb.tag}>`, index + 1]
+                    }
+                // accentds do not put close brackets into output
 
                 default:
                     console.log(symb)

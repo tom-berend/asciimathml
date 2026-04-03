@@ -37,19 +37,25 @@ export function test() {
         appnd(div, 'tan x tan alpha')
         appnd(div, 'tan vec x')
         appnd(div, 'vec tan x')
-        */
         appnd(div, 'vec(x)')
         appnd(div, 'vec(x + a)')
         appnd(div, 'tan(x)')
+        */
         appnd(div, 'tan(x + a)')
         appnd(div, 'tan x y z')
         appnd(div, 'tan (x y z)')
-        // appnd(div, 'norm x ') // rewriteleftright has two values
-        // appnd(div, 'norm(x)') // rewriteleftright has two values
-        // appnd(div, 'norm(alpha)')
-        // appnd(div, 'norm(vec x)')
-        // appnd(div, 'norm(tan x)')
-        // appnd(div, 'norm(tan(x))')
+        appnd(div, 'norm x ') // rewriteleftright has two values
+        appnd(div, 'norm(x)') // rewriteleftright has two values
+        appnd(div, 'norm(alpha)')
+        appnd(div, 'norm(vec x)')
+        appnd(div, 'norm(tan x)')
+        appnd(div, 'norm(tan(x))')
+
+        appnd(div, 'abs x')
+        appnd(div, 'abs(x)')
+        appnd(div, 'abs(xyz+ 123)')
+        appnd(div, 'abs(x+ -.1)')
+        appnd(div, 'abs(x+ -.123)')
 
 
         // appnd(div, `obrace log(x) cc log(x)`)
