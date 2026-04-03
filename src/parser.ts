@@ -231,9 +231,20 @@ export abstract class Parser {
             console.log('%cmainloop', 'background-color:blue;', index, JSON.stringify(lex[index]))
 
         }
+
         output += `</mrow>`
         output += `</mstyle>`
         output += `</math>`
+
+        // output += `<svg xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 100 100"    preserveAspectRatio="none">
+        // <line
+        // x1="0"
+        // y1="100"
+        // x2="100"
+        // y2="0"
+        // stroke="black"
+        // />
+        // </svg>`
         return output
     }
 
@@ -295,10 +306,10 @@ export abstract class Parser {
                         let inside = this.recursiveParser(lex, index + 1)
                         output += inside[0]
                         index = inside[1]
-                        output = `<${symb.tag}>` + symb.output + `</${symb.tag}>`
-                        return inside
+                        return [output,index]
 
                     } else {
+                        // brackets do not go into output, only the insides
                         let left = this.recursiveParser(lex, index + 1,)
                         return [left[0], left[1] + 1]
                     }
