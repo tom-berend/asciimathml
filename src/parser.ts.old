@@ -50,6 +50,10 @@ E ::= IE | I/I                       Expression
 Each terminal symbol is translated into a corresponding mathml node.*/
 
 
+// difference from Dr Lippman's version
+// supports -100 correctly, there are two different meanings of minus sign.  difference is no space in number '-100'
+
+
 export type AMSymbol = {
     input: string
     tag?: string // 'mi' | 'mo' | 'mn' | 'mroot' | 'mfrac' | 'msup' | 'msub' | 'mover' | 'mtext' | 'msqrt' | 'munder' | 'mstyle' | 'menclose' | 'mrow'
@@ -135,6 +139,7 @@ export abstract class Parser {
         let tests: [string, [string, number][]][] = [
 
             ['"hi"', [['hi', -1]]],
+            ["tan(x)", [["tan", 176], ["(", 115], ["x", -1], [")", 116]]],
             ["{:  :}", [["{:", 129], [":}", 130]]],
             ['- 100 -200 "-300" .400 0.500', [["-", -1], ["100", -1], ["-200", -1], ["-300", -1], [".400", -1], ["0.500", -1]]],    // numbers,    // numbers
             ['ab{cd}ef', [['ab', -1], ['{', cOp], ['cd', -1], ['}', cCl], ['ef', -1]]],
@@ -172,7 +177,6 @@ export abstract class Parser {
     lexScanner(text: string): [string, number][] {
 
         // walk character-by-character and pull out the snips
-        let curly = ['}', '{', ' ', '(', ')']  // break on curly or space
         let tokenStart = 0
         let tokens: LEX_TOKEN[] = [] //text, lexScanner value or index of amssymbol
         let inQuotedString = false
@@ -199,33 +203,16 @@ export abstract class Parser {
                 if (pos > tokenStart) {    // nothing between this and previous token
                     tokens.push(this.lexScannerSnip(text.slice(tokenStart, pos)))
                 }
+                inQuotedString = true
                 tokenStart = pos + 1  // skip over the quote
                 pos = tokenStart
-                inQuotedString = true
                 continue
             }
-
-            // if (ch == ' ') {    // eat spaces
-            //     pos += 1
-            //     tokenStart = pos
-            //     continue
-            // }
-
-            // // throw out empty strings
-            // if (pos > tokenStart && text.slice(tokenStart, pos) === ' ') {
-            //     tokenStart = pos
-            //     pos = tokenStart
-            //     continue
-            // }
 
             // look forward to see if unambiguous symbol ahead
             if (pos == tokenStart) {  // only at start of string; too aggressive with mid-string tokens
                 let inSymbolTbl = this.longestSymbol(text.slice(pos))
                 if (inSymbolTbl !== '') {   // empty string if not found
-                    // if (pos > tokenStart) {  // push anything we have collected
-                    //     tokens.push(this.lexScannerSnip(text.slice(tokenStart, pos)))
-                    //     tokenStart = pos
-                    // }
                     tokens.push(this.lexScannerSnip(inSymbolTbl))
                     tokenStart += inSymbolTbl.length
                     pos = tokenStart
@@ -274,6 +261,10 @@ export abstract class Parser {
     /** helper that takes a snip and returns either [snip, index] or [snip, LEX_STRING] depending on value */
     lexScannerSnip(snip: string): LEX_TOKEN {
         // console.warn(`${snip}`)
+        // special case - a single minus sign is always a symbol.  Lex scanner doesn't look backwards, could be -100 or a-b
+        if (snip === '-')
+            return (['-', this.AMsymbols.findIndex((symbol) => symbol.input === snip)])
+
         let index = this.AMsymbols.findIndex((symbol) => symbol.input === snip || symbol.tex === snip)
         if (index === -1) {    // not in symbol table
             return [snip, LEX_STRING]   // command
@@ -295,22 +286,22 @@ export abstract class Parser {
         // console.log(`numbers '${str}' returns ${res}`)
         return res
     }
-    /** given the next few characters to parse, is there an unambiguous symbol?
-     *  returns empty string if ambiguous, or unambiguous key
-    */
-    longestSymbol(str: string): string {
+    /** given the next few characters to parse, is there an unambiguous symbol?    */
+    longestSymbol(str: string): string {  // returns empty string if no match
         let lastSymb = ''
         for (const [key, value] of Object.entries(this.AMsymbols)) {
             if (str.slice(0, value.input.length) === value.input) {     // match, but may be ambiguous
-                let a = str.slice(0, value.input.length)
-                let b = value.input
                 if (value.input.length > lastSymb.length) {
                     lastSymb = value.input
                 }
-                // console.log(`  '${str.slice(0, 10)}'  '${a}' '${str.slice(0, value.input.length)}' , ${value.input}   -> lastsymb: '${lastSymb}'`)
             }
-        }
-        return lastSymb
+            // now do it again for tex values
+            if (value['tex'] !== undefined && value['tex'] !== null && str.slice(0, value.tex.length) === value.tex) {     // match, but may be ambiguous
+                if (value.tex.length > lastSymb.length) {
+                    lastSymb = value.tex
+                }
+            }
+        } return lastSymb
     }
 
 
@@ -353,6 +344,7 @@ export abstract class Parser {
         output += `</mstyle>`
         output += `</math>`
 
+        // attempt to put svg inside <math>.  doesnt work
         // output += `<svg xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 100 100"    preserveAspectRatio="none">
         // <line
         // x1="0"
@@ -374,7 +366,7 @@ export abstract class Parser {
             console.warn(`  constantEater`, index, JSON.stringify(lex[index]))
 
             if (lex[index][1] === -1) {  // literal, no symb available
-                if (this.containsOnlyNumbers(lex[index][0])) {
+                if (this.containsOnlyNumbers(lex[index][0]) && lex[index][0] !== '-') {  // ugly case of minus again
                     output += `<mn>` + lex[index][0] + `</mn>`;
                 } else {
                     let charArray = lex[index][0].split('')
@@ -430,6 +422,14 @@ export abstract class Parser {
                         let inside = this.recursiveParser(lex, index + 1, calledFrom)
                         output += inside[0]
                         index = inside[1]
+
+                        // are we looking at a rightbracket?
+                        symb = this.AMsymbols[lex[index][1]]
+                        if (symb.ttype == RIGHTBRACKET) {
+                            output += `<${symb.tag}>${symb.output}</${symb.tag}>`
+                            index += 1
+                        }
+
                         return [output, index]
 
                     } else {
@@ -438,8 +438,9 @@ export abstract class Parser {
                         return [left[0], left[1] + 1]
                     }
                 case RIGHTBRACKET:
-                    if (calledFrom == 'func') {  // show a bracket or eat the close
-                        return [`<${symb.tag}>` + symb.output + `</${symb.tag}>`, index + 1]
+                    console.warn('rightBracket', symb)
+                    if (calledFrom == 'func') {  // show a bracket  for functions
+                        return [`<${symb.tag}>${symb.output}</${symb.tag}>`, index + 1]
                     }
                 // accentds do not put close brackets into output
 

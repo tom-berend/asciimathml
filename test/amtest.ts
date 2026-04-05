@@ -14,44 +14,47 @@ export function test() {
         let tr = document.createElement('tr')
         div.appendChild(tr);
 
-        ['plaintext', 'TS', 'original JS', 'StringInsert', 'tokens','output'].map((title) => {
+        ['plaintext', 'AsciiMathML.js', 'TS Rewrite', 'tokens', 'output'].map((title) => {
             let th = document.createElement('th')
             th.innerHTML = title
             tr.appendChild(th)
         })
 
         /*
-        subtitle(div,'letters and symbols')
-        appnd(div, 'abc')
-        appnd(div, 'a b c')
-        appnd(div, 'alpha  beta  gamma')
-        appnd(div, 'NN')
-        appnd(div, 'NN ZZ')
-        appnd(div, 'a NN alpha ZZ')
-        appnd(div, 'a + b - c * d xx e')
+                subtitle(div,'letters and symbols')
+                appnd(div, 'abc')
+                appnd(div, 'a b c')
+                appnd(div, 'alpha  beta  gamma')
+                appnd(div, 'NN')
+                appnd(div, 'NN ZZ')
+                appnd(div, 'a NN alpha ZZ')
+                appnd(div, 'a + b - c * d xx e')
+                appnd(div, '-200-100 - 50  -a-b')
 
-        subtitle(div,'unary')
-        appnd(div, 'vec x')      // acc is true
-        appnd(div, 'vec alpha')
-        appnd(div, 'vec alpha x')
-        appnd(div, 'tan x')      // func is true
-        appnd(div, 'tan x tan alpha')
-        appnd(div, 'tan vec x')
-        appnd(div, 'vec tan x')
-        appnd(div, 'vec(x)')
-        appnd(div, 'vec(x + a)')
-        appnd(div, 'tan(x)')
-        */
+                subtitle(div,'unary')
+                appnd(div, 'vec x')      // acc is true
+                appnd(div, 'vec alpha')
+                appnd(div, 'vec alpha x')
+                appnd(div, 'tan x')      // func is true
+                appnd(div, 'tan x tan alpha')
+                appnd(div, 'tan vec x')
+                appnd(div, 'vec tan x')
+                appnd(div, 'vec(x)')
+                appnd(div, 'vec(x + a)')
+                appnd(div, 'tan(x)')
+                */
+        appnd(div, 'tan(x + a)')
+        appnd(div, 'tan x y z')
+        appnd(div, 'tan (x y z)')
+        appnd(div, 'norm x ') // rewriteleftright has two values
+        appnd(div, 'norm(x)') // rewriteleftright has two values
+        appnd(div, 'norm(alpha)')
+        appnd(div, 'norm(vec x)')
+        appnd(div, 'norm(tan x)')
+        appnd(div, 'norm(tan(x))')
+        appnd(div, 'tan(norm(tan(x)))')
 
-        // appnd(div, 'tan(x + a)')
-        // appnd(div, 'tan x y z')
-        // appnd(div, 'tan (x y z)')
-        // appnd(div, 'norm x ') // rewriteleftright has two values
-        // appnd(div, 'norm(x)') // rewriteleftright has two values
-        // appnd(div, 'norm(alpha)')
-        // appnd(div, 'norm(vec x)')
-        // appnd(div, 'norm(tan x)')
-        // appnd(div, 'norm(tan(x))')
+        /*
 
         // appnd(div, 'abs x')
         // appnd(div, 'abs(x)')
@@ -97,6 +100,9 @@ export function test() {
         // appnd(div, 'fr "AaBbCc frakur"')
         // appnd(div, 'sf "AaBbCc sanserif"')
 
+        // appnd(div, 'bold (abc)')
+        // appnd(div, 'bold (vec A)  bold(alpha')
+        // appnd(div, 'bold(alpha  beta  gamma)')
 
         // appnd(div, `"Literal non-italic"`)
 
@@ -283,7 +289,7 @@ appnd(div, 'a = 2pir^2')
 
 }
 
-function subtitle(div:HTMLElement,title:string){
+function subtitle(div: HTMLElement, title: string) {
     let tr = document.createElement('tr')
     div.appendChild(tr)
     let td = document.createElement('td')
@@ -302,33 +308,22 @@ function appnd(div: HTMLElement, expr: string, comment: string = '') {
     td1.innerHTML = expr
     tr.appendChild(td1)
 
-    // converted by new asciimathml
-    let td2 = document.createElement('td')
-    tr.appendChild(td2)
-    let math = am.parseMath(expr)
-    td2.appendChild(math)
+    // // converted by new asciimathml
+    // let td2 = document.createElement('td')
+    // tr.appendChild(td2)
+    // let math = am.parseMath(expr)
+    // td2.appendChild(math)
 
     // let old asciimathml convert this one
     let td3 = document.createElement('td')
     td3.innerHTML = '`' + expr + '`'
     tr.appendChild(td3)
 
-    let big = `<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mo>∫</mo><mn>0</mn><mn>1</mn></msubsup><msup><mi>u</mi><mn>4</mn></msup><mo>−</mo><mn>2</mn><msup><mi>u</mi><mn>3</mn></msup><mo>+</mo><mn>5</mn><msup><mi>u</mi><mn>2</mn></msup><mo>+</mo><mn>4</mn><mi>d</mi><mi>u</mi><mo>=</mo><msubsup><mrow><mo>[</mo><mrow><mfrac><msup><mi>u</mi><mn>5</mn></msup><mn>5</mn></mfrac><mo>−</mo><mn>2</mn><mfrac><msup><mi>u</mi><mn>4</mn></msup><mn>4</mn></mfrac><mo>+</mo><mn>5</mn><mfrac><msup><mi>u</mi><mn>3</mn></msup><mn>3</mn></mfrac><mo>+</mo><mn>4</mn><mi>u</mi></mrow><mo>]</mo></mrow><mrow><mi>u</mi><mo>=</mo><mn>0</mn></mrow><mn>1</mn></msubsup><mo>=</mo><mfrac><mn>161</mn><mn>30</mn></mfrac></mrow><annotation encoding="TeX">
-      \int_0^{1} u^4 - 2u^3 + 5u^2 + 4 du =
-      \left[ \frac{u^5}{5} - 2 \frac{u^4}{4} + 5 \frac{u^3}{3} + 4u \right]_{u=0}^1 =
-      \frac{161}{30}
-    </annotation></semantics></math>`
-
-    // let mathjax convert this one
     let td4 = document.createElement('td')
     let pOut = am.naiveParser(expr)
     td4.innerHTML = pOut
     tr.appendChild(td4)
 
-    // td2.appendChild(am.parseMath(expr))
-    // let p =  document.createElement('p')
-    // p.innerHTML = 'tom'
-    // td2.appendChild(p)
 
     let td5 = document.createElement('td')
     tr.appendChild(td5)
@@ -339,7 +334,7 @@ function appnd(div: HTMLElement, expr: string, comment: string = '') {
 
     let td6 = document.createElement('td')
     tr.appendChild(td6)
-    let pOut2 = pOut.slice(135+expr.length) // chop off the front
+    let pOut2 = pOut.slice(135 + expr.length) // chop off the front
     pOut2 = pOut2.slice(0, -23)   // chop off the end
     pOut2 = pOut2.replaceAll('<', '&lt;')   // neuter
     pOut2 = pOut2.replaceAll('>&lt;m', '><br>&lt;m')
