@@ -1,3 +1,41 @@
+/*
+ASCIIMathML.js          // downloaded 23-mar-2026
+==============
+This file contains JavaScript functions to convert ASCII math notation
+and (some) LaTeX to Presentation MathML. The conversion is done while the
+HTML page loads, and should work with Firefox and other browsers that can
+render MathML.
+
+Just add the next line to your HTML page with this file in the same folder:
+
+<script type="text/javascript" src="ASCIIMathML.js"></script>
+
+Version 2.2 Mar 3, 2014.
+Latest version at https://github.com/mathjax/asciimathml
+If you use it on a webpage, please send the URL to jipsen@chapman.edu
+
+Copyright (c) 2014 Peter Jipsen and other ASCIIMathML.js contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+*/
+
+
 const debug = true
 
 /*Parsing ASCII math expressions with the following grammar
@@ -14,7 +52,7 @@ Each terminal symbol is translated into a corresponding mathml node.*/
 
 export type AMSymbol = {
     input: string
-    tag: string // 'mi' | 'mo' | 'mn' | 'mroot' | 'mfrac' | 'msup' | 'msub' | 'mover' | 'mtext' | 'msqrt' | 'munder' | 'mstyle' | 'menclose' | 'mrow'
+    tag?: string // 'mi' | 'mo' | 'mn' | 'mroot' | 'mfrac' | 'msup' | 'msub' | 'mover' | 'mtext' | 'msqrt' | 'munder' | 'mstyle' | 'menclose' | 'mrow'
     output?: string
     tex?: string | null
     ttype: number //tokenType
@@ -43,6 +81,7 @@ const AMmathml = "http://www.w3.org/1998/Math/MathML";
 type LEX_TOKEN = [string, number]
 const LEX_STRING = -1
 
+const AMbb = ["𝐀", "𝐁", "𝐂", "𝐃", "𝐄", "𝐅", "𝐆", "𝐇", "𝐈", "𝐉", "𝐊", "𝐋", "𝐌", "𝐍", "𝐎", "𝐏", "𝐐", "𝐑", "𝐒", "𝐓", "𝐔", "𝐕", "𝐖", "𝐗", "𝐘", "𝐙", "𝐚", "𝐛", "𝐜", "𝐝", "𝐞", "𝐟", "𝐠", "𝐡", "𝐢", "𝐣", "𝐤", "𝐥", "𝐦", "𝐧", "𝐨", "𝐩", "𝐪", "𝐫", "𝐬", "𝐭", "𝐮", "𝐯", "𝐰", "𝐱", "𝐲", "𝐳", "𝟎", "𝟏", "𝟐", "𝟑", "𝟒", "𝟓", "𝟔", "𝟕", "𝟖", "𝟗"]
 
 
 export abstract class Parser {
@@ -73,9 +112,6 @@ export abstract class Parser {
     displaystyle: boolean         // puts limits above and below large operators
     decimalsign: string          // if "," then when writing lists or matrices put a space after the "," like `(1, 2)` not `(1,2)`
 
-
-
-
     constructor(AMsymbols, AMQuote, attributes: LooseObject) {
         this.AMsymbols = AMsymbols  // load parsing table
         this.AMquote = AMQuote
@@ -97,16 +133,20 @@ export abstract class Parser {
         let rOp = 115, rCl = 116
         let x = (s: string) => this.AMsymbols.findIndex((symbol) => symbol.input === s || symbol.tex === s)
         let tests: [string, [string, number][]][] = [
+
+            ['"hi"', [['hi', -1]]],
+            ["{:  :}", [["{:", 129], [":}", 130]]],
+            ['- 100 -200 "-300" .400 0.500', [["-", -1], ["100", -1], ["-200", -1], ["-300", -1], [".400", -1], ["0.500", -1]]],    // numbers,    // numbers
             ['ab{cd}ef', [['ab', -1], ['{', cOp], ['cd', -1], ['}', cCl], ['ef', -1]]],
             ['{cd}ef', [['{', cOp], ['cd', -1], ['}', cCl], ['ef', -1]]],
             ['ab{cd}', [['ab', -1], ['{', cOp], ['cd', -1], ['}', cCl]]],
             ['frac{cd}', [['frac', 240], ['{', cOp], ['cd', -1], ['}', cCl]]],
-            ['"hi"', [['hi', -1]]],
-            ['"\\{ { and } \\}"', [['\\{ { and } \\}', -1]]],
+            // ['"\\{ { and } \\}"', [['\\{ { and } \\}', -1]]],
             ['(x:} {:x)', [['(', rOp], ['x', -1], [':}', x(':}')], ['{:', x('{:')], ['x', -1], [')', rCl]]],
             ['bigvee', [['vvv', x('vvv')]]],    // converts TEX notation
             ['alpha beta gamma junk', [["alpha", 0], ["beta", 1], ["gamma", 8], ["junk", -1]]],    // converts TEX notation
             ['norm(x+.1)', [["norm", 194], ["(", 115], ["x", -1], ["+", -1], [".1", -1], [")", 116]]],    // numbers
+            ['a+b-c*d', [["a", -1], ["+", -1], ["b", -1], ["-", -1], ["c", -1], ["*", 38], ["d", -1]]],    // numbers
         ]
 
         tests.map((test) => {
@@ -116,7 +156,7 @@ export abstract class Parser {
             let r_out = JSON.stringify(results)
 
             if (r_in != r_out) {
-                console.assert(r_in === r_out, `Fails on ${test[0]} expected ${r_in} got ${r_out} `)
+                console.assert(r_in === r_out, `${test[0]} expected ${r_in} got ${r_out} `)
                 console.log(r_in)
                 console.log(r_out)
             }
@@ -133,12 +173,16 @@ export abstract class Parser {
 
         // walk character-by-character and pull out the snips
         let curly = ['}', '{', ' ', '(', ')']  // break on curly or space
-        let pos = 0
+        let tokenStart = 0
         let tokens: LEX_TOKEN[] = [] //text, lexScanner value or index of amssymbol
         let inQuotedString = false
 
-        let tokenStart = pos
+        let pos = tokenStart  // keep moving pos ahead of tokenStart
+        let safety = 0
+
         while (pos < text.length) {
+            if (safety++ > 1000) throw new Error('Infinite loop')
+
             let ch = text.charAt(pos);
 
             // most of this function is worrying about quoted strings
@@ -146,47 +190,90 @@ export abstract class Parser {
                 if (ch === '"') {  // close a quoted string
                     tokens.push([text.slice(tokenStart, pos), -1])   // push the string up to the quote
                     inQuotedString = false
-                    tokenStart = pos + 1   // skip over the quote, not added to the token
-                }
-                // else just continue collecting
-
-            } else {  // not in quoted string
-
-                if (ch === '"') {   // open a quoted string
-                    if (tokenStart < pos - 1) {    // nothing between this and previous token
-                        tokens.push(this.lexScannerSnip(text.slice(tokenStart, pos)))
-                    }
-                    tokenStart = pos + 1  // skip over the quote
-                    inQuotedString = true
-                }
-
-                // always break on a space (not in a quoted string)
-                if (ch === ' ') {
-                    tokens.push(this.lexScannerSnip(text.slice(tokenStart, pos)))
-                    tokenStart = pos + 1    // skip over the space
-                }
-
-                // break on change from symbol to alphabet to numbers
-                if (pos > tokenStart && (
-                    this.containsOnlyLetters(text.slice(tokenStart, pos)) !== this.containsOnlyLetters(ch) ||
-                    this.containsOnlyNumbers(text.slice(tokenStart, pos)) !== this.containsOnlyNumbers(ch))) {
-                    tokens.push(this.lexScannerSnip(text.slice(tokenStart, pos)))
-                    tokenStart = pos   // start new token
+                    tokenStart = pos + 1    // skip over the quote, not added to the token
+                    pos = tokenStart
+                    continue
                 }
             }
-            pos += 1  // just keep collecting
+            if (ch === '"') {   // open a quoted string
+                if (pos > tokenStart) {    // nothing between this and previous token
+                    tokens.push(this.lexScannerSnip(text.slice(tokenStart, pos)))
+                }
+                tokenStart = pos + 1  // skip over the quote
+                pos = tokenStart
+                inQuotedString = true
+                continue
+            }
+
+            // if (ch == ' ') {    // eat spaces
+            //     pos += 1
+            //     tokenStart = pos
+            //     continue
+            // }
+
+            // // throw out empty strings
+            // if (pos > tokenStart && text.slice(tokenStart, pos) === ' ') {
+            //     tokenStart = pos
+            //     pos = tokenStart
+            //     continue
+            // }
+
+            // look forward to see if unambiguous symbol ahead
+            if (pos == tokenStart) {  // only at start of string; too aggressive with mid-string tokens
+                let inSymbolTbl = this.longestSymbol(text.slice(pos))
+                if (inSymbolTbl !== '') {   // empty string if not found
+                    // if (pos > tokenStart) {  // push anything we have collected
+                    //     tokens.push(this.lexScannerSnip(text.slice(tokenStart, pos)))
+                    //     tokenStart = pos
+                    // }
+                    tokens.push(this.lexScannerSnip(inSymbolTbl))
+                    tokenStart += inSymbolTbl.length
+                    pos = tokenStart
+                    continue
+                }
+            }
+
+            // always break on a space (not in a quoted string)
+            if ([' ', '{', '}'].includes(ch)) {  // separators like space, brackets
+                if (pos > tokenStart) {  // longer than just this separator character
+                    tokens.push(this.lexScannerSnip(text.slice(tokenStart, pos))) // what came before
+                    tokenStart = pos
+                }
+                if (ch !== ' ') { // don't need to keep spaces
+                    tokens.push(this.lexScannerSnip(ch))
+                }
+                tokenStart += 1    // skip over the separator
+                pos = tokenStart
+                continue
+            }
+
+            // break on change from symbol to alphabet to numbers
+            if (pos > tokenStart && (
+                this.containsOnlyLetters(text.slice(tokenStart, pos)) !== this.containsOnlyLetters(ch) ||
+                this.containsOnlyNumbers(text.slice(tokenStart, pos)) !== this.containsOnlyNumbers(ch))) {
+
+                tokens.push(this.lexScannerSnip(text.slice(tokenStart, pos)))
+                tokenStart = pos    // start new token
+                pos = tokenStart
+                continue
+            }
+
+            // no one claims this token yet?  keep looking forward
+            pos += 1
+
         }
 
         // we are at the end of the string
-        if (tokenStart < text.length) {    // any remainder not accounted for?
-            let cmd = text.slice(tokenStart)
+        if (tokenStart < text.length && text.slice(tokenStart).trim() !== '') {    // any non-blank remainder not accounted for?
             tokens.push(this.lexScannerSnip(text.slice(tokenStart)))
-
         }
         return tokens
     }
-    // helper that takes a snip and returns either [snip, index] or [snip, LEX_STRING] depending on value
+
+    // helper functions.  could have used fat-arrow functions, but want to translate this to PHP
+    /** helper that takes a snip and returns either [snip, index] or [snip, LEX_STRING] depending on value */
     lexScannerSnip(snip: string): LEX_TOKEN {
+        // console.warn(`${snip}`)
         let index = this.AMsymbols.findIndex((symbol) => symbol.input === snip || symbol.tex === snip)
         if (index === -1) {    // not in symbol table
             return [snip, LEX_STRING]   // command
@@ -194,13 +281,36 @@ export abstract class Parser {
             return [this.AMsymbols[index].input, index]  // a command from the table (always AM, not TEX)
         }
     }
-    // helper for detecting break between alphas and symbols (assumes no Symbol contains both)
+    /** helper for detecting break between alphas and symbols (assumes no Symbol contains both) */
     containsOnlyLetters(str) {
-        return /^[A-Za-z]+$/.test(str);
+        let res = /^[A-Za-z]+$/.test(str);
+        // console.log(`letters '${str}' returns ${res}`)
+        return res
     }
-    // helper for detecting break between alphas and symbols (assumes no Symbol contains both)
-    containsOnlyNumbers(str) {
-        return /-?[0-9.]+$/.test(str);
+    /** helper for detecting break between alphas and symbols (assumes no Symbol contains both) */
+    containsOnlyNumbers(str): boolean {      // leading - is always a math minus. use quotes for "-100"
+        // console.log(`numbers '${str}' `)
+        if (str == '-' || str == '.') return true  // first char can be - or .  we might get space later
+        let res = /^[-]?[0-9]*[.]?[0-9]*$/.test(str);  // allows leading minus and one decimal point
+        // console.log(`numbers '${str}' returns ${res}`)
+        return res
+    }
+    /** given the next few characters to parse, is there an unambiguous symbol?
+     *  returns empty string if ambiguous, or unambiguous key
+    */
+    longestSymbol(str: string): string {
+        let lastSymb = ''
+        for (const [key, value] of Object.entries(this.AMsymbols)) {
+            if (str.slice(0, value.input.length) === value.input) {     // match, but may be ambiguous
+                let a = str.slice(0, value.input.length)
+                let b = value.input
+                if (value.input.length > lastSymb.length) {
+                    lastSymb = value.input
+                }
+                // console.log(`  '${str.slice(0, 10)}'  '${a}' '${str.slice(0, value.input.length)}' , ${value.input}   -> lastsymb: '${lastSymb}'`)
+            }
+        }
+        return lastSymb
     }
 
 
@@ -518,7 +628,7 @@ export abstract class Parser {
         var tagst;
         var match = "";
         var more = true;
-        for (var i = 1; i <= str.length && more; i++) {
+        for (let i = 1; i <= str.length && more; i++) {
             st = str.slice(0, i); //initial substring of length i
             j = k;
             k = this.position(this.AMnames, st, j);

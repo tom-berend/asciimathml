@@ -344,19 +344,39 @@ const AMsymbols: AMSymbol[] = [
     { input: "class", tag: "mrow", ttype: BINARY },
     { input: "cancel", tag: "menclose", output: "cancel", tex: null, ttype: UNARY },
     AMquote,
-    { input: "bb", tag: "mstyle", atname: "mathvariant", atval: "bold", output: "bb", tex: null, ttype: UNARY, codes: 'bold' },
-    { input: "mathbf", tag: "mstyle", atname: "mathvariant", atval: "bold", output: "mathbf", tex: null, ttype: UNARY, codes: 'bold' },
-    { input: "sf", tag: "mstyle", atname: "mathvariant", atval: "sans-serif", output: "sf", tex: null, ttype: UNARY, codes: 'sans-serif' },
-    { input: "mathsf", tag: "mstyle", atname: "mathvariant", atval: "sans-serif", output: "mathsf", tex: null, ttype: UNARY, codes: 'sans-serif' },
-    { input: "bbb", tag: "mstyle", atname: "mathvariant", atval: "double-struck", output: "bbb", tex: null, ttype: UNARY, codes: 'double-struck' },
-    { input: "mathbb", tag: "mstyle", atname: "mathvariant", atval: "double-struck", output: "mathbb", tex: null, ttype: UNARY, codes: 'double-struck' },
-    { input: "cc", tag: "mstyle", atname: "mathvariant", atval: "script", output: "cc", tex: null, ttype: UNARY, codes: 'script' },
-    { input: "mathcal", tag: "mstyle", atname: "mathvariant", atval: "script", output: "mathcal", tex: null, ttype: UNARY, codes: 'script' },
-    { input: "tt", tag: "mstyle", atname: "mathvariant", atval: "monospace", output: "tt", tex: null, ttype: UNARY, codes: 'monospace' },
-    { input: "mathtt", tag: "mstyle", atname: "mathvariant", atval: "monospace", output: "mathtt", tex: null, ttype: UNARY, codes: 'monospace' },
-    { input: "fr", tag: "mstyle", atname: "mathvariant", atval: "fraktur", output: "fr", tex: null, ttype: UNARY, codes: 'fraktur' },
-    { input: "mathfrak", tag: "mstyle", atname: "mathvariant", atval: "fraktur", output: "mathfrak", tex: null, ttype: UNARY, codes: 'fraktur' }
+    // { input: "bb", tag: "mstyle", atname: "mathvariant", atval: "bold", output: "bb", tex: null, ttype: UNARY, codes: 'bold' },
+    // { input: "mathbf", tag: "mstyle", atname: "mathvariant", atval: "bold", output: "mathbf", tex: null, ttype: UNARY, codes: 'bold' },
+    // { input: "sf", tag: "mstyle", atname: "mathvariant", atval: "sans-serif", output: "sf", tex: null, ttype: UNARY, codes: 'sans-serif' },
+    // { input: "mathsf", tag: "mstyle", atname: "mathvariant", atval: "sans-serif", output: "mathsf", tex: null, ttype: UNARY, codes: 'sans-serif' },
+    // { input: "bbb", tag: "mstyle", atname: "mathvariant", atval: "double-struck", output: "bbb", tex: null, ttype: UNARY, codes: 'double-struck' },
+    // { input: "mathbb", tag: "mstyle", atname: "mathvariant", atval: "double-struck", output: "mathbb", tex: null, ttype: UNARY, codes: 'double-struck' },
+    // { input: "cc", tag: "mstyle", atname: "mathvariant", atval: "script", output: "cc", tex: null, ttype: UNARY, codes: 'script' },
+    // { input: "mathcal", tag: "mstyle", atname: "mathvariant", atval: "script", output: "mathcal", tex: null, ttype: UNARY, codes: 'script' },
+    // { input: "tt", tag: "mstyle", atname: "mathvariant", atval: "monospace", output: "tt", tex: null, ttype: UNARY, codes: 'monospace' },
+    // { input: "mathtt", tag: "mstyle", atname: "mathvariant", atval: "monospace", output: "mathtt", tex: null, ttype: UNARY, codes: 'monospace' },
+    // { input: "fr", tag: "mstyle", atname: "mathvariant", atval: "fraktur", output: "fr", tex: null, ttype: UNARY, codes: 'fraktur' },
+    // { input: "mathfrak", tag: "mstyle", atname: "mathvariant", atval: "fraktur", output: "mathfrak", tex: null, ttype: UNARY, codes: 'fraktur' },
+
+    { input: "bb", ttype: UNARY, tex: "mathbf", codes: AMbb },
+    // { input: "sf", ttype: UNARY, tex: "mathsf", codes: AMsf },
+    // { input: "bbsf", ttype: UNARY, codes: AMbbsf },
+    // { input: "bbb", ttype: UNARY, tex: "mathbb", codes: AMbbb },
+    // { input: "cc", ttype: UNARY, tex: "mathcal", codes: AMcal },
+    // { input: "bbcc", ttype: UNARY, codes: AMbbcal },
+    // { input: "tt", ttype: UNARY, tex: "mathtt", codes: AMtt },
+    // { input: "fr", ttype: UNARY, tex: "mathfrak", codes: AMfrk },
+    // { input: "bbfr", ttype: UNARY, codes: AMbbfr },
+    // { input: "bbit", ttype: UNARY, codes: AMbbit },
+    // { input: "bold", ttype: UNARY, codes: AMbbit }
+
+
+    // added by tom, re-sort after accept
+    // { input: "-", tag: "mo", output: "\u0096", tex: null, ttype: CONST },   // commented above, probably because of numbers
+
+
 ];
+
+
 
 
 
