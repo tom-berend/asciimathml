@@ -702,20 +702,17 @@ export class AsciiMath {
 
     /** eats both constants and literals */
     constantEater(lex: [string, number][], index: number, calledFrom = ''): [string, number] {
-        console.warn(`  constantEater`, index, JSON.stringify(lex[index]))
         let output = ''
 
         while (index < lex.length && (lex[index][1] === -1 || this.AMsymbols[lex[index][1]].ttype === CONST)) {
-            console.warn(`  constantEater`, index, JSON.stringify(lex[index]))
+            console.warn(`  constantEater, ${index}, ${JSON.stringify(lex[index])}, '${calledFrom}'`)
 
             if (lex[index][1] === -1) {  // literal, no symb available
 
                 // special case - comma.   if called from 'leftbracket' then breaks tablerow else just operator
                 if (lex[index][0] === ',') {
                     output += (calledFrom == 'leftbracket') ? '</mtd><mtd>' : "<mo>,</mo>"
-                }
-
-                if (this.containsOnlyNumbers(lex[index][0]) && lex[index][0] !== '-') {  // ugly case of minus again
+                } else if (this.containsOnlyNumbers(lex[index][0]) && lex[index][0] !== '-') {  // ugly case of minus again
                     output += `<mn>` + lex[index][0] + `</mn>`;
                 } else {
                     let charArray = lex[index][0].split('')
@@ -723,14 +720,14 @@ export class AsciiMath {
                         output += ['+', '/', '-', '*', '%'].includes(char) ? `<mo>${char}</mo>` : `<mi>${char}</mi>`
                     );
                 }
+
             } else {
                 let symb = this.AMsymbols[lex[index][1]]   // the lex we are looking at
                 output += `<${symb.tag}>` + symb.output + `</${symb.tag}>`
             }
+            // every path comes through here
             index += 1
         }
-
-        // return ['<mrow>' + output + '</mrow>', index]
         return [output, index]
     }
 
@@ -745,7 +742,7 @@ export class AsciiMath {
             // let charArray = lex[index][0].split('')
             // charArray.forEach(char => output += `<mi>` + char + `</mi>`);
             // [output, index + 1]
-            return this.constantEater(lex, index)
+            return this.constantEater(lex, index, calledFrom)
 
         } else {
 
@@ -758,7 +755,7 @@ export class AsciiMath {
             switch (symb.ttype) {
                 case CONST:
                     if (calledFrom == 'func')
-                        return this.constantEater(lex, index)
+                        return this.constantEater(lex, index, calledFrom)
                     else {      // vec only eats a single symbol
                         output = `<${symb.tag}>` + symb.output + `</${symb.tag}>`
                         return [output, index + 1]
@@ -817,7 +814,13 @@ export class AsciiMath {
                                 index += 1
                             }
                         }
-                        return [output, index ]
+                        return [output, index]
+
+                    } else if (calledFrom == 'acc') {
+                        // brackets do not go into output for accents, only the insides
+                        let left = this.recursiveParser(lex, index + 1)
+                        return [left[0], left[1] + 1]
+
 
                     } else if (lookAheadSymbTtype == LEFTBRACKET) { // opening a matrix
                         output += `<${symb.tag}>${symb.output}</${symb.tag}>`
@@ -828,9 +831,17 @@ export class AsciiMath {
                         return [output, index + 1]
 
                     } else {
-                        // brackets do not go into output, only the insides
+                        // user wants brackets
+                        output += `<${symb.tag}>` + symb.output + `</${symb.tag}>`
                         let left = this.recursiveParser(lex, index + 1)
-                        return [left[0], left[1] + 1]
+                        output += left[0]
+                        index = left[1]
+                        // is there a closing bracket?
+                        if (index < lex.length - 1 && this.AMsymbols[lex[index][1]].ttype == RIGHTBRACKET) {
+                            output += `<${symb.tag}>` + symb.output + `</${symb.tag}>`
+                            index += 1
+                        }
+                        return [output,index]
                     }
 
                 case RIGHTBRACKET:

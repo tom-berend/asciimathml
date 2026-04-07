@@ -46,39 +46,32 @@ export function test() {
         appnd(div, 'tan x y z')
         appnd(div, 'tan (x y z)')
         appnd(div, 'norm x ') // rewriteleftright has two values
-       appnd(div, 'norm(x)') // rewriteleftright has two values
-       appnd(div, 'norm(alpha)')
-       appnd(div, 'norm(vec x)')
-       appnd(div, 'norm(tan x)')
-       appnd(div, 'norm(tan(x))')
-       appnd(div, 'tan(norm(tan(x)))')
+        appnd(div, 'norm(x)') // rewriteleftright has two values
+        appnd(div, 'norm(alpha)')
+        appnd(div, 'norm(vec x)')
+        appnd(div, 'norm(tan x)')
+        appnd(div, 'norm(tan(x))')
+        appnd(div, 'tan(norm(tan(x)))')
 
 
-       appnd(div, 'abs x')
-       appnd(div, 'abs(x)')
-       appnd(div, 'abs(xyz+ 123)')
-       appnd(div, 'abs(x+ -.123)')
-
-       */
+        appnd(div, 'abs x')
+        appnd(div, 'abs(x)')
+        appnd(div, 'abs(xyz+ 123)')
+        appnd(div, 'abs(x+ -.123)')
 
 
-       // appnd(div, `obrace log(x) cc log(x)`)
-       // appnd(div, `obrace log(x) obrace cc log(x)`)
-       // appnd(div, `log(x) cc "log(x)"`)
-       // appnd(div, `log(x) cc log(x)`)
 
-       // appnd(div, '')
+        appnd(div, `obrace log(x) cc log(x)`)
+        appnd(div, `obrace log(x) obrace cc log(x)`)
+        appnd(div, `log(x) cc "log(x)"`)
+        appnd(div, `log(x) cc log(x)`)
 
-       // appnd(div, `log(x)`)
-       // appnd(div, `bb log(x)`)
-       // appnd(div, `bb log x`)
-        // appnd(div, `bb log bb`)
-        // appnd(div, `"(x)"`)
-        // appnd(div,`log(x) bb`)
 
         subtitle(div, 'matrices')
         appnd(div, 'a b c d')
         appnd(div, 'a,b,c,d')
+        */
+        appnd(div, '[a,b,c,d]')
         appnd(div, '[[ a,b,c,d ]]')
         appnd(div, '[[a,b],[c,d]]')
         appnd(div, '[(a,b),(c,d)]')
@@ -93,6 +86,15 @@ export function test() {
         appnd(div, `{(2x,+,17y,=,23),(x,-,y,=,5):}`)
 
         appnd(div, `lim_(N->oo) sum_(i=0)^N`)
+
+        appnd(div, `log(x)`)
+        appnd(div, `bb log(x)`)
+        appnd(div, `bb log x`)
+        appnd(div, `bb log bb`)
+        appnd(div, `"(x)"`)
+        appnd(div,`log(x) bb`)
+
+
 
         // appnd(div, '')
         // appnd(div, `"abc 01239 $%*"`)

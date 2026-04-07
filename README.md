@@ -1,11 +1,14 @@
 asciimathml-ts
 ===========
 
+**BEING REWRITTEN- DO NOT USE**
+
 This is a quick-and-dirty port of ASCIIMathML.js into TS and NPM.
 
 Update jan.2026:  update tsconfig to output ES6 module and added an example.
 Update mar 2026   updated symbol table from asciimathml repository (arcsec, !sub, dagger, etc)
 
+<math title="norm(vec x)"><mstyle mathcolor="white" fontsize="1em" mathsize="1em" fontfamily="serif" mathvariant="serif" displaystyle="true"><mrow><mrow><mo>∥</mo><mover><mrow><mi>x</mi></mrow><mo>→</mo></mover><mo>∥</mo></mrow></mrow></mstyle></math>
 ----
 
 Original Readme feb.2021
