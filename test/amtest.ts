@@ -20,63 +20,79 @@ export function test() {
             tr.appendChild(th)
         })
 
+        subtitle(div, 'letters and symbols')
         /*
-                subtitle(div,'letters and symbols')
-                appnd(div, 'abc')
-                appnd(div, 'a b c')
-                appnd(div, 'alpha  beta  gamma')
-                appnd(div, 'NN')
-                appnd(div, 'NN ZZ')
-                appnd(div, 'a NN alpha ZZ')
-                appnd(div, 'a + b - c * d xx e')
-                appnd(div, '-200-100 - 50  -a-b')
+        appnd(div, 'abc')
+        appnd(div, 'a b c')
+        appnd(div, 'alpha  beta  gamma')
+        appnd(div, 'NN')
+        appnd(div, 'NN ZZ')
+        appnd(div, 'a NN alpha ZZ')
+        appnd(div, 'a + b - c * d xx e')
+        appnd(div, '-200-100 - 50  -a-b')
 
-                subtitle(div,'unary')
-                appnd(div, 'vec x')      // acc is true
-                appnd(div, 'vec alpha')
-                appnd(div, 'vec alpha x')
-                appnd(div, 'tan x')      // func is true
-                appnd(div, 'tan x tan alpha')
-                appnd(div, 'tan vec x')
-                appnd(div, 'vec tan x')
-                appnd(div, 'vec(x)')
-                appnd(div, 'vec(x + a)')
-                appnd(div, 'tan(x)')
-                */
+        subtitle(div, 'unary')
+        appnd(div, 'vec x')      // acc is true
+        appnd(div, 'vec alpha')
+        appnd(div, 'vec alpha x')
+        appnd(div, 'tan x')      // func is true
+        appnd(div, 'tan x tan alpha')
+        appnd(div, 'tan vec x')
+        appnd(div, 'vec tan x')
+        appnd(div, 'vec(x)')
+        appnd(div, 'vec(x + a)')
+        appnd(div, 'tan(x)')
         appnd(div, 'tan(x + a)')
         appnd(div, 'tan x y z')
         appnd(div, 'tan (x y z)')
         appnd(div, 'norm x ') // rewriteleftright has two values
-        appnd(div, 'norm(x)') // rewriteleftright has two values
-        appnd(div, 'norm(alpha)')
-        appnd(div, 'norm(vec x)')
-        appnd(div, 'norm(tan x)')
-        appnd(div, 'norm(tan(x))')
-        appnd(div, 'tan(norm(tan(x)))')
-
-        /*
-
-        // appnd(div, 'abs x')
-        // appnd(div, 'abs(x)')
-        // appnd(div, 'abs(xyz+ 123)')
-        // appnd(div, 'abs(x+ -.1)')
-        // appnd(div, 'abs(x+ -.123)')
+       appnd(div, 'norm(x)') // rewriteleftright has two values
+       appnd(div, 'norm(alpha)')
+       appnd(div, 'norm(vec x)')
+       appnd(div, 'norm(tan x)')
+       appnd(div, 'norm(tan(x))')
+       appnd(div, 'tan(norm(tan(x)))')
 
 
-        // appnd(div, `obrace log(x) cc log(x)`)
-        // appnd(div, `obrace log(x) obrace cc log(x)`)
-        // appnd(div, `log(x) cc "log(x)"`)
-        // appnd(div, `log(x) cc log(x)`)
+       appnd(div, 'abs x')
+       appnd(div, 'abs(x)')
+       appnd(div, 'abs(xyz+ 123)')
+       appnd(div, 'abs(x+ -.123)')
 
-        // appnd(div, '')
+       */
 
-        // appnd(div, `log(x)`)
-        // appnd(div, `bb log(x)`)
-        // appnd(div, `bb log x`)
+
+       // appnd(div, `obrace log(x) cc log(x)`)
+       // appnd(div, `obrace log(x) obrace cc log(x)`)
+       // appnd(div, `log(x) cc "log(x)"`)
+       // appnd(div, `log(x) cc log(x)`)
+
+       // appnd(div, '')
+
+       // appnd(div, `log(x)`)
+       // appnd(div, `bb log(x)`)
+       // appnd(div, `bb log x`)
         // appnd(div, `bb log bb`)
         // appnd(div, `"(x)"`)
         // appnd(div,`log(x) bb`)
 
+        subtitle(div, 'matrices')
+        appnd(div, 'a b c d')
+        appnd(div, 'a,b,c,d')
+        appnd(div, '[[ a,b,c,d ]]')
+        appnd(div, '[[a,b],[c,d]]')
+        appnd(div, '[(a,b),(c,d)]')
+        appnd(div, '((a),(b))')
+        /*
+        appnd(div, '([a],[b])')
+        appnd(div, '(  a,b )')
+        appnd(div, '<<(a),(b)>>')
+        appnd(div, '<< a,b >>')
+        appnd(div, '[[ ((x),(y)) ,b],[c,d]]')
+        appnd(div, '[[a,b,|,c],[d,e,|,f]]')
+        appnd(div, `{(2x,+,17y,=,23),(x,-,y,=,5):}`)
+
+        appnd(div, `lim_(N->oo) sum_(i=0)^N`)
 
         // appnd(div, '')
         // appnd(div, `"abc 01239 $%*"`)
