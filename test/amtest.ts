@@ -22,6 +22,7 @@ export function test() {
 
         subtitle(div, 'letters and symbols')
         /*
+        */
         appnd(div, 'abc')
         appnd(div, 'a b c')
         appnd(div, 'alpha  beta  gamma')
@@ -37,9 +38,11 @@ export function test() {
         appnd(div, 'vec alpha x')
         appnd(div, 'tan x')      // func is true
         appnd(div, 'tan x tan alpha')
+        appnd(div, '(x)')
+        appnd(div, 'vec x')
+        appnd(div, 'vec(x)')
         appnd(div, 'tan vec x')
         appnd(div, 'vec tan x')
-        appnd(div, 'vec(x)')
         appnd(div, 'vec(x + a)')
         appnd(div, 'tan(x)')
         appnd(div, 'tan(x + a)')
@@ -70,15 +73,14 @@ export function test() {
         subtitle(div, 'matrices')
         appnd(div, 'a b c d')
         appnd(div, 'a,b,c,d')
-        */
         appnd(div, '[a,b,c,d]')
         appnd(div, '[[ a,b,c,d ]]')
         appnd(div, '[[a,b],[c,d]]')
         appnd(div, '[(a,b),(c,d)]')
         appnd(div, '((a),(b))')
-        /*
         appnd(div, '([a],[b])')
         appnd(div, '(  a,b )')
+        /*
         appnd(div, '<<(a),(b)>>')
         appnd(div, '<< a,b >>')
         appnd(div, '[[ ((x),(y)) ,b],[c,d]]')
