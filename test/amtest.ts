@@ -36,7 +36,8 @@ export function test() {
         appnd(div, 'vec x')      // acc is true
         appnd(div, 'vec alpha')
         appnd(div, 'vec alpha x')
-        appnd(div, 'tan x')      // func is true
+        appnd(div, 'tan x tan x')
+        appnd(div, 'tan (x) tan(x)')
         appnd(div, 'tan x tan alpha')
         appnd(div, '(x)')
         appnd(div, 'vec x')
@@ -48,13 +49,16 @@ export function test() {
         appnd(div, 'tan(x + a)')
         appnd(div, 'tan x y z')
         appnd(div, 'tan (x y z)')
-        appnd(div, 'norm x ') // rewriteleftright has two values
-        appnd(div, 'norm(x)') // rewriteleftright has two values
+
+       appnd(div, '(x)') // rewriteleftright has two values
+       appnd(div, 'norm(x)') // rewriteleftright has two values
+       appnd(div, 'norm x norm x') // rewriteleftright has two values
         appnd(div, 'norm(alpha)')
         appnd(div, 'norm(vec x)')
         appnd(div, 'norm(tan x)')
         appnd(div, 'norm(tan(x))')
         appnd(div, 'tan(norm(tan(x)))')
+        appnd(div, 'tan(tan(norm(tan(x))))')
 
 
         appnd(div, 'abs x')
@@ -62,12 +66,6 @@ export function test() {
         appnd(div, 'abs(xyz+ 123)')
         appnd(div, 'abs(x+ -.123)')
 
-
-
-        appnd(div, `obrace log(x) cc log(x)`)
-        appnd(div, `obrace log(x) obrace cc log(x)`)
-        appnd(div, `log(x) cc "log(x)"`)
-        appnd(div, `log(x) cc log(x)`)
 
 
         subtitle(div, 'matrices')
@@ -80,7 +78,7 @@ export function test() {
         appnd(div, '((a),(b))')
         appnd(div, '([a],[b])')
         appnd(div, '(  a,b )')
-        /*
+
         appnd(div, '<<(a),(b)>>')
         appnd(div, '<< a,b >>')
         appnd(div, '[[ ((x),(y)) ,b],[c,d]]')
@@ -88,6 +86,16 @@ export function test() {
         appnd(div, `{(2x,+,17y,=,23),(x,-,y,=,5):}`)
 
         appnd(div, `lim_(N->oo) sum_(i=0)^N`)
+
+
+        appnd(div, `obrace log(x) cc log(x)`)
+        appnd(div, `obrace log(x) obrace cc log(x)`)
+        appnd(div, `log(x) cc "log(x)"`)
+        appnd(div, `log(x) cc log(x)`)
+
+
+
+        /*
 
         appnd(div, `log(x)`)
         appnd(div, `bb log(x)`)
