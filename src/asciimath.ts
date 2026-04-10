@@ -481,10 +481,10 @@ export class AsciiMath {
         let x = (s: string) => this.AMsymbols.findIndex((symbol) => symbol.input === s || symbol.tex === s)
         let tests: [string, [string, number][]][] = [
 
-            ['"hi"', [['hi', -1]]],
+            ['"hi"', [['hi', -2]]],
             ["tan(x)", [["tan", 176], ["(", 115], ["x", -1], [")", 116]]],
             ["{:  :}", [["{:", 129], [":}", 130]]],
-            ['- 100 -200 "-300" .400 0.500', [["-", -1], ["100", -1], ["-200", -1], ["-300", -1], [".400", -1], ["0.500", -1]]],    // numbers,    // numbers
+            ['- 100 -200 "-300" .400 0.500', [["-", -1], ["100", -1], ["-200", -1], ["-300", -2], [".400", -1], ["0.500", -1]]],    // numbers,    // numbers
             ['ab{cd}ef', [['ab', -1], ['{', cOp], ['cd', -1], ['}', cCl], ['ef', -1]]],
             ['{cd}ef', [['{', cOp], ['cd', -1], ['}', cCl], ['ef', -1]]],
             ['ab{cd}', [['ab', -1], ['{', cOp], ['cd', -1], ['}', cCl]]],
@@ -534,11 +534,14 @@ export class AsciiMath {
 
             // most of this function is worrying about quoted strings
             if (inQuotedString) {
-                if (ch === '"') {  // close a quoted string
-                    tokens.push([text.slice(tokenStart, pos), -1])   // push the string up to the quote
+                if (ch === '"') {  // close a quoted string  // use -2 for quoted string
+                    tokens.push([text.slice(tokenStart, pos), -2])   // push the string up to the quote
                     inQuotedString = false
                     tokenStart = pos + 1    // skip over the quote, not added to the token
                     pos = tokenStart
+                    continue
+                } else {
+                    pos += 1
                     continue
                 }
             }
@@ -702,15 +705,33 @@ export class AsciiMath {
     /** eats both constants and literals */
     constantEater(lex: [string, number][], index: number, calledFrom = '', extraStyle: string = ''): [string, number] {
         let output = ''
-        console.log('constanteater style', extraStyle)
 
-        while (index < lex.length && (lex[index][1] === -1 || this.AMsymbols[lex[index][1]].ttype === CONST)) {
+        while (index < lex.length && (lex[index][1] === -1 || lex[index][1] === -2 || this.AMsymbols[lex[index][1]].ttype === CONST)) {
             console.warn(`  constantEater, ${index}, ${JSON.stringify(lex[index])}, '${calledFrom}'`)
 
             if (lex[index][1] === -1) {  // literal, no symb available
 
-                // special case - comma.   if called from 'leftbracket' then breaks tablerow else just operator
-                if (lex[index][0] === ',') {
+                // a special case for infix - we look ahead.  if infix we must infix first
+                let nextSymb = (index + 1 < lex.length && lex[index + 1][1] >= 0) ? this.AMsymbols[lex[index + 1][1]] : null
+                if (nextSymb && nextSymb.ttype === INFIX) {
+                    output += `<${nextSymb.tag}>`
+
+                    if (this.containsOnlyNumbers(lex[index][0])) {
+                        output += `<mn ${extraStyle}>` + lex[index][0] + `</mn>`
+                    } else {
+                        output += `<mi ${extraStyle}>` + lex[index][0] + `</mi>`
+                    }
+                    index += 2  // skip over the infix token
+                    if (this.containsOnlyNumbers(lex[index][0])) {
+                        output += `<mn ${extraStyle}>` + lex[index][0] + `</mn>`
+                    } else {
+                        output += `<mi ${extraStyle}>` + lex[index][0] + `</mi>`
+                    }
+                    output += `</${nextSymb.tag}>`
+                    index += 1
+
+                    // special case - comma.   if called from 'leftbracket' then breaks tablerow else just operator
+                } else if (lex[index][0] === ',') {
                     output += (calledFrom == 'leftbracket') ? '</mtd><mtd>' : `<mo ${extraStyle}>,</mo>`
                 } else if (this.containsOnlyNumbers(lex[index][0]) && lex[index][0] !== '-') {  // ugly case of minus again
                     output += `<mn ${extraStyle}>` + lex[index][0] + `</mn>`;
@@ -720,6 +741,10 @@ export class AsciiMath {
                         output += ['+', '/', '-', '*', '%', '$'].includes(char) ? `<mo ${extraStyle}>${char}</mo>` : `<mi ${extraStyle}>${char}</mi>`
                     );
                 }
+
+            } else if (lex[index][1] === -2) {  // quoted string
+                output += `<mtext ${extraStyle}>` + lex[index][0] + `</mtext>`;
+                index += 1
 
             } else {
                 let symb = this.AMsymbols[lex[index][1]]   // the lex we are looking at
@@ -746,7 +771,7 @@ export class AsciiMath {
         output += `<!-- RECURSIVE ${lex[index][0]}-->`
 
 
-        if (lex[index][1] === -1) {  // literal, no symb available
+        if (lex[index][1] === -1 || lex[index][1] === -2) {  // literal, no symb available
             // let charArray = lex[index][0].split('')
             // charArray.forEach(char => output += `<mi>` + char + `</mi>`);
             // [output, index + 1]
@@ -759,7 +784,7 @@ export class AsciiMath {
         } else {
 
             let symb = this.AMsymbols[lex[index][1]]   // the lex we are looking at
-            let nextSymb = (index + 1 < lex.length && lex[index + 1][1] > -1) ? this.AMsymbols[lex[index + 1][1]] : null
+            let nextSymb = (index + 1 < lex.length && lex[index + 1][1] >= 0) ? this.AMsymbols[lex[index + 1][1]] : null
 
             // define lookAhead symbol type so don't have to keep checking if there is an entry in AMsymbol.
             let lookAheadSymbTtype = (nextSymb) ? this.AMsymbols[lex[index + 1][1]].ttype : -1
@@ -773,6 +798,19 @@ export class AsciiMath {
                         let left = this.constantEater(lex, index, calledFrom, extraStyle)
                         output += left[0]
                         index = left[1]
+
+                    } else if (lookAheadSymbTtype == INFIX) {  // consts like INT (integral) have infix
+                        output = `<msubsup>`
+                        index += 1
+                        output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`  // eg: tan
+                        index += 1
+                        symb = this.AMsymbols[lex[index][1]]   // the lex we are looking at
+                        output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`  // eg: tan
+                        index += 1
+                        symb = this.AMsymbols[lex[index][1]]   // the lex we are looking at
+                        output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`  // eg: tan
+
+                        output = `</msubsup>`
 
                     } else {      // vec only eats a single symbol
                         output = `<${symb.tag} ${extraStyle}>` + symb.output + `</${symb.tag}>`
@@ -819,9 +857,14 @@ export class AsciiMath {
                     } else if (symb.codes) {
                         output += ''
                     } else {
-                        console.log(symb)
-                        output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`  // eg: tan
-                        index += 1
+
+                        output += `<${symb.tag} ${extraStyle}>`  // eg: sqrt (no innerhtml needed)
+                        output += `<mrow>`
+                        let acc = this.recursiveParser(lex, index + 1, 'acc', extraStyle)
+                        output += acc[0]
+                        index = acc[1]
+                        output += `</mrow>`
+                        output += `</${symb.tag}>`      // close of sqrt?
                         // throw new Error('unary')
                     }
                     break;
@@ -917,12 +960,30 @@ export class AsciiMath {
 
                 case INFIX:
                     console.error('missing infix', symb)
-                    index += 1
-                    break;
+
+
+                    output += `<${symb.tag}>`      // nextSymbol sub, sup goes first
+                    let acc = this.constantEater(lex, index + 1, calledFrom, extraStyle)  // current symbol
+                    output += acc[0]
+                    index = acc[1]
+                    output += `</${symb.tag}>`  // close the sub sup
+                    return [output, index]
+
+
+
+                //     output += `<${symb.tag}>`      // sub, sup
+                //     let acc = this.constantEater(lex, index+1, calledFrom, extraStyle)
+                //     output += acc[0]
+                //     index =acc[1]
+                //     output += `</${symb.tag}>$`
+                //     break;
+
                 case DEFINITION:
-                    console.error('missing infix', symb)
+                    console.error('missing definition', symb)
                     index += 1
                     break;
+
+
 
                 default:
                     console.log(symb)

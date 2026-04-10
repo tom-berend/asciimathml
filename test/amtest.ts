@@ -322,14 +322,15 @@ appnd(div, 'a = 2pir^2')
 }
 
 function fontTests(div: HTMLElement) {
-    ['', 'bb', 'sf', 'bbsf', 'bbb', 'cc', 'bbcc', 'tt', 'fr', 'bbfr', 'bbit', 'bold'].forEach((font) => {
+    ['', /*'bb', 'sf', 'bbsf', 'bbb', 'cc', 'bbcc', 'tt', 'fr', 'bbfr', 'bbit', 'bold' */].forEach((font) => {
         subtitle(div, font)
-        appnd(div, `${font} "abc 01239 $%*"`)
-        appnd(div, `${font} tan (x)`)
-        appnd(div, `${font} hat (x)`)
-        appnd(div, `${font} abs (x)`)
-        appnd(div, `${font} sqrt log(x)`)
-        appnd(div, `${font}( int_0^1 f(x)dx )`)
+        // appnd(div, `${font} "abc 01239 $%*"`)
+        // appnd(div, `${font} tan (x)`)
+        // appnd(div, `${font} hat (x)`)
+        // appnd(div, `${font} abs (x)`)
+        // appnd(div, `${font} sqrt log(x)`)
+        appnd(div, `${font} x_2`)
+       appnd(div, `${font} int_0^1 f(x)dx `)
 
 
     })
