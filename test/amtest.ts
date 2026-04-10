@@ -20,120 +20,124 @@ export function test() {
             tr.appendChild(th)
         })
 
-        subtitle(div, 'letters and symbols')
-        /*
-        */
-        appnd(div, 'abc')
-        appnd(div, 'a b c')
-        appnd(div, 'alpha  beta  gamma')
-        appnd(div, 'NN')
-        appnd(div, 'NN ZZ')
-        appnd(div, 'a NN alpha ZZ')
-        appnd(div, 'a + b - c * d xx e')
-        appnd(div, '-200-100 - 50  -a-b')
-
-        subtitle(div, 'unary')
-        appnd(div, 'vec x')      // acc is true
-        appnd(div, 'vec alpha')
-        appnd(div, 'vec alpha x')
-        appnd(div, 'tan x tan x')
-        appnd(div, 'tan (x) tan(x)')
-        appnd(div, 'tan x tan alpha')
-        appnd(div, '(x)')
-        appnd(div, 'vec x')
-        appnd(div, 'vec(x)')
-        appnd(div, 'tan vec x')
-        appnd(div, 'vec tan x')
-        appnd(div, 'vec(x + a)')
-        appnd(div, 'tan(x)')
-        appnd(div, 'tan(x + a)')
-        appnd(div, 'tan x y z')
-        appnd(div, 'tan (x y z)')
-
-       appnd(div, '(x)') // rewriteleftright has two values
-       appnd(div, 'norm(x)') // rewriteleftright has two values
-       appnd(div, 'norm x norm x') // rewriteleftright has two values
-        appnd(div, 'norm(alpha)')
-        appnd(div, 'norm(vec x)')
-        appnd(div, 'norm(tan x)')
-        appnd(div, 'norm(tan(x))')
-        appnd(div, 'tan(norm(tan(x)))')
-        appnd(div, 'tan(tan(norm(tan(x))))')
-
-
-        appnd(div, 'abs x')
-        appnd(div, 'abs(x)')
-        appnd(div, 'abs(xyz+ 123)')
-        appnd(div, 'abs(x+ -.123)')
-
-
-
-        subtitle(div, 'matrices')
-        appnd(div, 'a b c d')
-        appnd(div, 'a,b,c,d')
-        appnd(div, '[a,b,c,d]')
-        appnd(div, '[[ a,b,c,d ]]')
-        appnd(div, '[[a,b],[c,d]]')
-        appnd(div, '[(a,b),(c,d)]')
-        appnd(div, '((a),(b))')
-        appnd(div, '([a],[b])')
-        appnd(div, '(  a,b )')
-
-        appnd(div, '<<(a),(b)>>')
-        appnd(div, '<< a,b >>')
-        appnd(div, '[[ ((x),(y)) ,b],[c,d]]')
-        appnd(div, '[[a,b,|,c],[d,e,|,f]]')
-        appnd(div, `{(2x,+,17y,=,23),(x,-,y,=,5):}`)
-
-        appnd(div, `lim_(N->oo) sum_(i=0)^N`)
-
-
-        appnd(div, `obrace log(x) cc log(x)`)
-        appnd(div, `obrace log(x) obrace cc log(x)`)
-        appnd(div, `log(x) cc "log(x)"`)
-        appnd(div, `log(x) cc log(x)`)
-
-
+        fontTests(div)
 
         /*
+                subtitle(div, 'letters and symbols')
+                appnd(div, 'abc')
+                appnd(div, 'a b c')
+                appnd(div, 'alpha  beta  gamma')
+                appnd(div, 'NN')
+                appnd(div, 'NN ZZ')
+                appnd(div, 'a NN alpha ZZ')
+                appnd(div, 'a + b - c * d xx e')
+                appnd(div, '-200-100 - 50  -a-b')
 
-        appnd(div, `log(x)`)
-        appnd(div, `bb log(x)`)
-        appnd(div, `bb log x`)
-        appnd(div, `bb log bb`)
-        appnd(div, `"(x)"`)
-        appnd(div,`log(x) bb`)
+
+
+                subtitle(div, 'unary')
+                appnd(div, 'vec x')      // acc is true
+                appnd(div, 'vec alpha')
+                appnd(div, 'vec alpha x')
+                appnd(div, 'tan x tan x')
+                appnd(div, 'tan (x) tan(x)')
+                appnd(div, 'tan x tan alpha')
+                appnd(div, '(x)')
+                appnd(div, 'vec x')
+                appnd(div, 'vec(x)')
+                appnd(div, 'tan vec x')
+                appnd(div, 'vec tan x')
+                appnd(div, 'vec(x + a)')
+                appnd(div, 'tan(x)')
+                appnd(div, 'tan(x + a)')
+                appnd(div, 'tan x y z')
+                appnd(div, 'tan (x y z)')
+
+                appnd(div, '(x)') // rewriteleftright has two values
+                appnd(div, 'norm(x)') // rewriteleftright has two values
+                appnd(div, 'norm x norm x') // rewriteleftright has two values
+                appnd(div, 'norm(alpha)')
+                appnd(div, 'norm(vec x)')
+                appnd(div, 'norm(tan x)')
+                appnd(div, 'norm(tan(x))')
+                */
+        /*
+         appnd(div, 'tan(norm(tan(x)))')
+         appnd(div, 'tan(tan(norm(tan(x))))')
+
+
+         appnd(div, 'abs x')
+         appnd(div, 'abs(x)')
+         appnd(div, 'abs(xyz+ 123)')
+         appnd(div, 'abs(x+ -.123)')
+
+
+         subtitle(div, 'matrices')
+         appnd(div, 'a b c d')
+         appnd(div, 'a,b,c,d')
+         appnd(div, '[a,b,c,d]')
+         appnd(div, '[[ a,b,c,d ]]')
+         appnd(div, '[[a,b],[c,d]]')
+         appnd(div, '[(a,b),(c,d)]')
+         appnd(div, '((a),(b))')
+         appnd(div, '([a],[b])')
+         appnd(div, '(  a,b )')
+
+         appnd(div, '<<(a),(b)>>')
+         appnd(div, '<< a,b >>')
+         appnd(div, '[[ ((x),(y)) ,b],[c,d]]')
+         appnd(div, '[[a,b,|,c],[d,e,|,f]]')
+         appnd(div, `{(2x,+,17y,=,23),(x,-,y,=,5):}`)
+
+         appnd(div, `lim_(N->oo) sum_(i=0)^N`)
+
+
+         appnd(div, `obrace log(x) cc log(x)`)
+         appnd(div, `obrace log(x) obrace cc log(x)`)
+         appnd(div, `log(x) cc "log(x)"`)
+         appnd(div, `log(x) cc log(x)`)
 
 
 
-        // appnd(div, '')
-        // appnd(div, `"abc 01239 $%*"`)
-        // appnd(div, `bb "abc 01239 $%*"`)
-        // appnd(div, `bbb "abc 01239 $%*"`)
-        // appnd(div, `tt "abc 01239 $%*"`)
-        // appnd(div, `fr "abc 01239 $%*"`)
-        // appnd(div, `sf "abc 01239 $%*"`)
+         appnd(div, `log(x)`)
+         appnd(div, `bb log(x)`)
+         appnd(div, `bb log x`)
+         appnd(div, `bb log bb`)
+         appnd(div, `"(x)"`)
+         appnd(div,`log(x) bb`)
 
-        // appnd(div, '')
-        // appnd(div, `bb(bracket bold AaBbCc)`)
-        // appnd(div, `mathbf(bracket bold AaBbCc)`)
-        // appnd(div, 'bb "literal bold AaBbCc"')
-        // appnd(div, 'mathbf "literal bold AaBbCc"')
-        // appnd(div, '')
-        // appnd(div, '"AaBbCc literal"')
-        // appnd(div, 'bb "AaBbCc bold"')
-        // appnd(div, 'bbb "AaBbCc dbl-struck"')
-        // appnd(div, 'cc "AaBbCc script"')
-        // appnd(div, 'tt "AaBbCc mono"')
-        // appnd(div, 'fr "AaBbCc frakur"')
-        // appnd(div, 'sf "AaBbCc sanserif"')
 
-        // appnd(div, 'bold (abc)')
-        // appnd(div, 'bold (vec A)  bold(alpha')
-        // appnd(div, 'bold(alpha  beta  gamma)')
 
-        // appnd(div, `"Literal non-italic"`)
+         subtitle(div, 'Fonts')
 
+         appnd(div, `"abc 01239 $%*"`)
+         appnd(div, `bb "abc 01239 $%*"`)
+         appnd(div, `bbb "abc 01239 $%*"`)
+         appnd(div, `tt "abc 01239 $%*"`)
+         appnd(div, `fr "abc 01239 $%*"`)
+         appnd(div, `sf "abc 01239 $%*"`)
+
+         appnd(div, '')
+         appnd(div, `bb(bracket bold AaBbCc)`)
+         appnd(div, `mathbf(bracket bold AaBbCc)`)
+         appnd(div, 'bb "literal bold AaBbCc"')
+         appnd(div, 'mathbf "literal bold AaBbCc"')
+         appnd(div, '')
+         appnd(div, '"AaBbCc literal"')
+         appnd(div, 'bb "AaBbCc bold"')
+         appnd(div, 'bbb "AaBbCc dbl-struck"')
+         appnd(div, 'cc "AaBbCc script"')
+         appnd(div, 'tt "AaBbCc mono"')
+         appnd(div, 'fr "AaBbCc frakur"')
+         appnd(div, 'sf "AaBbCc sanserif"')
+
+         appnd(div, 'bold (abc)')
+         appnd(div, 'bold (vec A)  bold(alpha')
+         appnd(div, 'bold(alpha  beta  gamma)')
+
+         appnd(div, `"Literal non-italic"`)
+
+         */
         // appnd(div, '')
 
 
@@ -317,13 +321,28 @@ appnd(div, 'a = 2pir^2')
 
 }
 
+function fontTests(div: HTMLElement) {
+    ['', 'bb', 'sf', 'bbsf', 'bbb', 'cc', 'bbcc', 'tt', 'fr', 'bbfr', 'bbit', 'bold'].forEach((font) => {
+        subtitle(div, font)
+        appnd(div, `${font} "abc 01239 $%*"`)
+        appnd(div, `${font} tan (x)`)
+        appnd(div, `${font} hat (x)`)
+        appnd(div, `${font} abs (x)`)
+        appnd(div, `${font} sqrt log(x)`)
+        appnd(div, `${font}( int_0^1 f(x)dx )`)
+
+
+    })
+}
+
+
 function subtitle(div: HTMLElement, title: string) {
     let tr = document.createElement('tr')
     div.appendChild(tr)
     let td = document.createElement('td')
     td.colSpan = 6
     td.innerHTML = `<b>${title}</b>`
-    td.style = 'background-color:aliceblue';
+    td.style = 'background-color:aliceblue;max-width:25%;';
     tr.appendChild(td)
 }
 
@@ -336,19 +355,20 @@ function appnd(div: HTMLElement, expr: string, comment: string = '') {
     td1.innerHTML = expr
     tr.appendChild(td1)
 
-    // // converted by new asciimathml
-    // let td2 = document.createElement('td')
-    // tr.appendChild(td2)
-    // let math = am.parseMath(expr)
-    // td2.appendChild(math)
+    // let asciimathml convert this one
+    let td2 = document.createElement('td')
+    td2.innerHTML = '`' + expr + '`'
+    tr.appendChild(td2)
 
-    // let old asciimathml convert this one
     let td3 = document.createElement('td')
-    td3.innerHTML = '`' + expr + '`'
+    let pOut3 = am.naiveParser(expr)
+    td3.innerHTML = pOut3
     tr.appendChild(td3)
 
+
+
     let td4 = document.createElement('td')
-    let pOut = am.naiveParser(expr)
+    let pOut = am.naiveParser(expr,'style="font-weight:bold;"')
     td4.innerHTML = pOut
     tr.appendChild(td4)
 
@@ -357,16 +377,16 @@ function appnd(div: HTMLElement, expr: string, comment: string = '') {
     tr.appendChild(td5)
     let rOut = am.lexScanner(expr)
     let rOut2 = JSON.stringify(rOut).replaceAll('],', ']<br/>')
-
     td5.innerHTML = comment + rOut2
 
     let td6 = document.createElement('td')
+    td6.style = 'max-width:25%;';
     tr.appendChild(td6)
     let pOut2 = pOut.slice(135 + expr.length) // chop off the front
     pOut2 = pOut2.slice(0, -23)   // chop off the end
     pOut2 = pOut2.replaceAll('<', '&lt;')   // neuter
     pOut2 = pOut2.replaceAll('>&lt;m', '><br>&lt;m')
-    td6.innerHTML = pOut2
+    // td6.innerHTML = pOut2
 
 }
 
