@@ -862,7 +862,7 @@ export class AsciiMath {
                     if (calledFrom == 'func') {
 
                         let output = `<${symb.tag} ${extraStyle}>` + symb.output + `</${symb.tag}>`
-                        let inside = this.recursiveParser(lex, index + 1, 'leftbracket', extraStyle)
+                        let inside = this.recursiveParser(lex, index + 1, '', extraStyle)
                         output += inside[0]
                         index = inside[1]
 
@@ -877,7 +877,7 @@ export class AsciiMath {
 
                     } else if (calledFrom == 'acc') {
                         // brackets do not go into output for accents, only the insides
-                        let left = this.recursiveParser(lex, index + 1, 'leftbracket', extraStyle)
+                        let left = this.recursiveParser(lex, index + 1, '', extraStyle)
                         output += left[0]
                         index = left[1] + 2   // eat the rightbracket here
                         return [output, index]   // end of expression
@@ -895,7 +895,7 @@ export class AsciiMath {
                     } else {
                         // user wants brackets
                         output += `<${symb.tag} ${extraStyle}>` + symb.output + `</${symb.tag}>`
-                        let left = this.recursiveParser(lex, index + 1, 'leftbracket', extraStyle)
+                        let left = this.recursiveParser(lex, index + 1, '', extraStyle)
                         output += left[0]
                         index = left[1]
                         // is there a closing bracket?
@@ -916,7 +916,6 @@ export class AsciiMath {
 
                         // } else if (calledFrom == 'acc') {  // show a bracket  for functions
                         //     throw new Error('should be handled by leftbracket')
-
 
                     } else if (lookAheadSymbTtype == LEFTBRACKET) { //  middle ][ boundary of a matrix
                         index += 2     // eat both brackets

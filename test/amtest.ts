@@ -19,6 +19,7 @@ export function test() {
             th.innerHTML = title
             tr.appendChild(th)
         })
+  /*
         appnd(div, `"abc"`)
         appnd(div, 'a b c')
         appnd(div, 'alpha  beta  gamma')
@@ -54,10 +55,10 @@ export function test() {
         return
         appnd(div, `bold[[a,b,c,d]] `)
         appnd(div, `bold( [[a,b,c,d]] ) `)
-
+/* */
         subtitle(div, 'matrices')
-        appnd(div, 'a b c d')
-        appnd(div, 'a,b,c,d')
+        // appnd(div, 'a b c d')
+        // appnd(div, 'a,b,c,d')
         appnd(div, '[a,b,c,d]')
         appnd(div, '[[ a,b,c,d ]]')
         appnd(div, '[[a,b],[c,d]]')
