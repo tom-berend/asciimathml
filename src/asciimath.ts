@@ -349,7 +349,7 @@ const AMsymbols: AMSymbol[] = [
     { input: "underset", tag: "munder", output: "stackrel", tex: null, ttype: BINARY },
     { input: "_", tag: "msub", output: "_", tex: null, ttype: INFIX },
     { input: "^", tag: "msup", output: "^", tex: null, ttype: INFIX },
-    { input: "hat", tag: "mover", output: "\u005E", tex: null, ttype: UNARY, acc: true },
+    { input: "hat", tag: "mover", output: "\u0302", tex: null, ttype: UNARY, acc: true },
     { input: "bar", tag: "mover", output: "\u00AF", tex: "overline", ttype: UNARY, acc: true },
     { input: "vec", tag: "mover", output: "\u2192", tex: null, ttype: UNARY, acc: true },
     { input: "dot", tag: "mover", output: ".", tex: null, ttype: UNARY, acc: true },
@@ -365,37 +365,21 @@ const AMsymbols: AMSymbol[] = [
     { input: "class", tag: "mrow", ttype: BINARY },
     { input: "cancel", tag: "menclose", output: "cancel", tex: null, ttype: UNARY },
     AMquote,
-    // { input: "bb", tag: "mstyle", atname: "mathvariant", atval: "bold", output: "bb", tex: null, ttype: UNARY, codes: 'bold' },
-    // { input: "mathbf", tag: "mstyle", atname: "mathvariant", atval: "bold", output: "mathbf", tex: null, ttype: UNARY, codes: 'bold' },
-    // { input: "sf", tag: "mstyle", atname: "mathvariant", atval: "sans-serif", output: "sf", tex: null, ttype: UNARY, codes: 'sans-serif' },
-    // { input: "mathsf", tag: "mstyle", atname: "mathvariant", atval: "sans-serif", output: "mathsf", tex: null, ttype: UNARY, codes: 'sans-serif' },
-    // { input: "bbb", tag: "mstyle", atname: "mathvariant", atval: "double-struck", output: "bbb", tex: null, ttype: UNARY, codes: 'double-struck' },
-    // { input: "mathbb", tag: "mstyle", atname: "mathvariant", atval: "double-struck", output: "mathbb", tex: null, ttype: UNARY, codes: 'double-struck' },
-    // { input: "cc", tag: "mstyle", atname: "mathvariant", atval: "script", output: "cc", tex: null, ttype: UNARY, codes: 'script' },
-    // { input: "mathcal", tag: "mstyle", atname: "mathvariant", atval: "script", output: "mathcal", tex: null, ttype: UNARY, codes: 'script' },
-    // { input: "tt", tag: "mstyle", atname: "mathvariant", atval: "monospace", output: "tt", tex: null, ttype: UNARY, codes: 'monospace' },
-    // { input: "mathtt", tag: "mstyle", atname: "mathvariant", atval: "monospace", output: "mathtt", tex: null, ttype: UNARY, codes: 'monospace' },
-    // { input: "fr", tag: "mstyle", atname: "mathvariant", atval: "fraktur", output: "fr", tex: null, ttype: UNARY, codes: 'fraktur' },
-    // { input: "mathfrak", tag: "mstyle", atname: "mathvariant", atval: "fraktur", output: "mathfrak", tex: null, ttype: UNARY, codes: 'fraktur' },
-
-    { input: "bb", ttype: UNARY, tex: "mathbf", codes: 'AMbb' },
-    { input: "sf", ttype: UNARY, tex: "mathsf", codes: 'AMsf' },
-    { input: "bbsf", ttype: UNARY, codes: 'AMbbsf' },
-    { input: "bbb", ttype: UNARY, tex: "mathbb", codes: 'AMbbb' },
-    { input: "cc", ttype: UNARY, tex: "mathcal", codes: 'AMcal' },
-    { input: "bbcc", ttype: UNARY, codes: 'AMbbcal' },
-    { input: "tt", ttype: UNARY, tex: "mathtt", codes: 'AMtt' },
-    { input: "fr", ttype: UNARY, tex: "mathfrak", codes: 'AMfrk' },
-    { input: "bbfr", ttype: UNARY, codes: 'AMbbfr' },
-    { input: "bbit", ttype: UNARY, codes: 'AMbbit' },
-    { input: "bold", ttype: UNARY, codes: 'AMbbit' }
-
-
-    // added by tom, re-sort after accept
-    // { input: "-", tag: "mo", output: "\u0096", tex: null, ttype: CONST },   // commented above, probably because of numbers
-
-
+    { input: "bb", ttype: UNARY, tex: "mathbf", codes: 'bold' },
+    { input: "sf", ttype: UNARY, tex: "mathsf", codes: 'sans-serif' },
+    { input: "sfit", ttype: UNARY, codes: 'sans-serif-italic' },
+    { input: "bbsf", ttype: UNARY, codes: 'bold-sans-serif' },
+    { input: "bbb", ttype: UNARY, tex: "mathbb", codes: 'double-struck' },
+    { input: "cc", ttype: UNARY, tex: "mathcal", codes: 'script' },
+    { input: "bbcc", ttype: UNARY, codes: 'bold-script' },
+    { input: "tt", ttype: UNARY, tex: "mathtt", codes: 'monospace' },
+    { input: "fr", ttype: UNARY, tex: "mathfrak", codes: 'fraktur' },
+    { input: "bbfr", ttype: UNARY, codes: 'bold-fraktur' },
+    { input: "bbit", ttype: UNARY, codes: 'bold-italic' },
+    { input: "bbsfit", ttype: UNARY, codes: 'sans-serif-bold-italic' },
+    { input: "bold", ttype: UNARY }
 ];
+
 
 
 
@@ -567,7 +551,7 @@ export class AsciiMath {
             }
 
             // always break on a space (not in a quoted string)
-            if ([' ', '{', '}'].includes(ch)) {  // separators like space, brackets
+            if ([' ', '{', '}'].includes(ch)) {  // separators like space, brackets, comma
                 if (pos > tokenStart) {  // longer than just this separator character
                     tokens.push(this.lexScannerSnip(text.slice(tokenStart, pos))) // what came before
                     tokenStart = pos
@@ -659,7 +643,7 @@ export class AsciiMath {
     naiveParser(str: string, extraStyle: string = ''): string {
         let output = '';
 
-        // output += `<math display="block" xmlns="http://www.w3.org/1998/Math/MathML" title="${str}">`
+        // output += `<math display="block" xmlns="http://www.w3.org/1998/Math/MathML" title='${str}'>`
         output += `<math title="${str}">`
         // output += `<semantics></semantics>`
         output += `<mstyle mathcolor="blue" fontsize="1em" mathsize="1em" fontfamily="serif" mathvariant="serif" displaystyle="true">`
@@ -761,14 +745,14 @@ export class AsciiMath {
     recursiveParser(lex: [string, number][], index: number, calledFrom, extraStyle: string): [string, number] {
         let output = ''
         let safety = 0
-        console.warn(`  arrive in recursive`, index, JSON.stringify(lex[index]), `called from '${calledFrom}'`)
+        // console.warn(`  arrive in recursive`, index, JSON.stringify(lex[index]), `called from '${calledFrom}'`)
 
         // while (index < lex.length) {
         //     safety += 1
         //     if (safety > 10) {
         //         throw new Error('endless loop')
         //     }
-        output += `<!-- RECURSIVE ${lex[index][0]}-->`
+        // output += `<!-- RECURSIVE ${lex[index][0]}-->`
 
 
         if (lex[index][1] === -1 || lex[index][1] === -2) {  // literal, no symb available
@@ -819,7 +803,12 @@ export class AsciiMath {
                     break;
 
                 case UNARY:
-                    if (symb.func) {               // eg tan
+                    if (symb.input == 'bold') {
+                        let style = this.recursiveParser(lex, index + 1, 'acc', `style='font-weight:bold;'`)
+                        output += style[0]
+                        index = style[1]
+
+                    } else if (symb.func) {               // eg tan
                         // console.log('func',index)
                         output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`  // eg: tan
                         let func = this.recursiveParser(lex, index + 1, 'func', extraStyle)    // argument for tan
@@ -856,9 +845,9 @@ export class AsciiMath {
 
                     } else if (symb.codes) {
                         output += ''
-                    } else {
 
-                        output += `<${symb.tag} ${extraStyle}>`  // eg: sqrt (no innerhtml needed)
+                    } else {// eg: sqrt
+                        output += `<${symb.tag} ${extraStyle}>`
                         output += `<mrow>`
                         let acc = this.recursiveParser(lex, index + 1, 'acc', extraStyle)
                         output += acc[0]
@@ -888,7 +877,7 @@ export class AsciiMath {
 
                     } else if (calledFrom == 'acc') {
                         // brackets do not go into output for accents, only the insides
-                        let left = this.recursiveParser(lex, index + 1, '', extraStyle)
+                        let left = this.recursiveParser(lex, index + 1, 'leftbracket', extraStyle)
                         output += left[0]
                         index = left[1] + 2   // eat the rightbracket here
                         return [output, index]   // end of expression
@@ -906,12 +895,13 @@ export class AsciiMath {
                     } else {
                         // user wants brackets
                         output += `<${symb.tag} ${extraStyle}>` + symb.output + `</${symb.tag}>`
-                        let left = this.recursiveParser(lex, index + 1, '', extraStyle)
+                        let left = this.recursiveParser(lex, index + 1, 'leftbracket', extraStyle)
                         output += left[0]
                         index = left[1]
                         // is there a closing bracket?
                         if (index < lex.length - 1 && this.AMsymbols[lex[index][1]].ttype == RIGHTBRACKET) {
-                            output += `<${symb.tag} ${extraStyle}>` + symb.output + `</${symb.tag}>`
+                            let nextSymb = this.AMsymbols[lex[index][1]]
+                            output += `<${nextSymb.tag} ${extraStyle}>` + nextSymb.output + `</${nextSymb.tag}>`
                             index += 1
                         }
                         return [output, index]
@@ -919,21 +909,22 @@ export class AsciiMath {
                     break
 
                 case RIGHTBRACKET:
-                    // console.warn('rightBracket', symb)
+                    console.warn('rightBracket', symb)
                     if (calledFrom == 'func') {  // show a bracket  for functions
                         return [`<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`, index + 1]
+
 
                         // } else if (calledFrom == 'acc') {  // show a bracket  for functions
                         //     throw new Error('should be handled by leftbracket')
 
 
                     } else if (lookAheadSymbTtype == LEFTBRACKET) { //  middle ][ boundary of a matrix
-                        output += `</mtd><mtd>`
                         index += 2     // eat both brackets
 
                         let left = this.recursiveParser(lex, index + 1, 'leftbracket', extraStyle)
                         output += left[0]
                         index = left[1]
+                        output += `</mtd><mtd>`
                         return [output, index + 1]
 
                     } else if (lookAheadSymbTtype == RIGHTBRACKET) { //  ]] end of a matrix
@@ -950,8 +941,8 @@ export class AsciiMath {
                             output += left[0]
                             index = left[1]
                         }
-                        output += `</mtd></mtr></mtable>`
                         output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`
+                        output += `</mtd></mtr></mtable>`
 
                         return [output, index + 1]
 
@@ -999,64 +990,6 @@ export class AsciiMath {
 
 
     }
-
-
-    // /** handle unary symbols */
-    // unary(lex: [string, number][], index: number,extraStyle
-    // ): [string, number] {
-    //     // either func:true (sin, tilde) or acc:true
-    //     //    or neither (sqrt & cancel)
-    //     //    or notexcopy and rewriteleftright (abs)
-    //     //    or rewriteleftright (floor, norm)
-    //     //    or codes (bb)
-    //     //
-    //     let symb = this.AMsymbols[lex[index][1]]   // the lex we are looking at
-    //     let output = ''
-    //     // console.warn('  unary', index, JSON.stringify(lex[index]))
-
-    //     if (symb.func) {               // eg tan
-    //         // console.log('func',index)
-    //         output += `<${symb.tag}>${symb.output}</${symb.tag}>`  // eg: tan
-    //         let func = this.recursiveParser(lex, index + 1, 'func')    // argument for tan
-    //         output += func[0]
-    //         index = func[1]
-
-    //     } else if (symb.acc) {        // eg; vec
-    //         output += `<${symb.tag}>`  // mover
-
-    //         output += `<mrow>`
-    //         let acc = this.recursiveParser(lex, index + 1,'',extraStyle)
-    //         output += acc[0]
-    //         index = acc[1]
-    //         output += `</mrow>`
-
-    //         output += `<mo>` + symb.output + `</mo>`
-    //         output += `</${symb.tag}>`  // <mover>
-
-    //     } else if (symb.rewriteleftright) {
-    //         // console.log('rewrite')
-    //         output += `<mrow>`
-    //         output += `<mo>` + symb.rewriteleftright[0] + `</mo>`
-    //         let acc = this.recursiveParser(lex, index + 1,'')
-    //         output += acc[0]
-    //         index = acc[1]
-    //         output += `<mo>` + symb.rewriteleftright[1] + `</mo>`
-    //         output += `</mrow>`
-
-    //     } else if (symb.codes) {
-    //         output += ''
-    //     } else {
-    //         throw new Error('unary')
-    //     }
-
-    //     // index += 1
-    //     return [output, index]
-    // }
-
-
-
-
-
 
 
 
