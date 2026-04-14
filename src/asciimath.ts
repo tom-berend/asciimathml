@@ -651,12 +651,12 @@ export class AsciiMath {
 
 
         let lex = this.lexScanner(str)
-        console.log(lex)
+        // console.log(lex)
         let index = 0
         let safety = 0
 
         while (index < lex.length) {
-            console.log(`%cmainloop ${str}`, 'background-color:blue;', index, JSON.stringify(lex[index]), `extraStyle:'${extraStyle}'`)
+            // console.log(`%cmainloop ${str}`, 'background-color:blue;', index, JSON.stringify(lex[index]), `extraStyle:'${extraStyle}'`)
             safety += 1
             if (safety > 10) {
                 break;
@@ -691,7 +691,7 @@ export class AsciiMath {
         let output = ''
 
         while (index < lex.length && (lex[index][1] === -1 || lex[index][1] === -2 || this.AMsymbols[lex[index][1]].ttype === CONST)) {
-            console.warn(`  constantEater, ${index}, ${JSON.stringify(lex[index])}, '${calledFrom}'`)
+            // console.warn(`  constantEater, ${index}, ${JSON.stringify(lex[index])}, '${calledFrom}'`)
 
             if (lex[index][1] === -1) {  // literal, no symb available
 
@@ -774,7 +774,7 @@ export class AsciiMath {
             let lookAheadSymbTtype = (nextSymb) ? this.AMsymbols[lex[index + 1][1]].ttype : -1
 
 
-            console.log('symb in recursive', symb, lookAheadSymbTtype)
+            // console.log('symb in recursive', symb, lookAheadSymbTtype)
 
             switch (symb.ttype) {
                 case CONST:
@@ -861,87 +861,116 @@ export class AsciiMath {
                 case LEFTBRACKET:
                     if (calledFrom == 'func') {
 
-                        let output = `<${symb.tag} ${extraStyle}>` + symb.output + `</${symb.tag}>`
+                        let output = `<${symb.tag} ${extraStyle}>${symb.output}bob1</${symb.tag}>`
                         let inside = this.recursiveParser(lex, index + 1, '', extraStyle)
                         output += inside[0]
                         index = inside[1]
 
-                        if (index < lex.length) {
-                            let rightb = this.AMsymbols[lex[index][1]]   // the closing bracket
-                            if (rightb && rightb.ttype == RIGHTBRACKET) {   // safety check, it SHOULD be a rightbracket
-                                output += `<${rightb.tag} ${extraStyle}>${rightb.output}</${rightb.tag}>`
-                                index += 1
-                            }
-                        }
+                        // if (index < lex.length) {
+                        //     let rightb = this.AMsymbols[lex[index][1]]   // the closing bracket
+                        //     if (rightb && rightb.ttype == RIGHTBRACKET) {   // safety check, it SHOULD be a rightbracket
+                        //         output += `<${rightb.tag} ${extraStyle}>${rightb.output}</${rightb.tag}>`
+                        //         index += 1
+                        //     }
+                        // }
                         return [output, index]   // end of expression
 
                     } else if (calledFrom == 'acc') {
                         // brackets do not go into output for accents, only the insides
                         let left = this.recursiveParser(lex, index + 1, '', extraStyle)
-                        output += left[0]
+                        output += left[0] + 'bob2'
                         index = left[1] + 2   // eat the rightbracket here
                         return [output, index]   // end of expression
 
-
-                    } else if (lookAheadSymbTtype == LEFTBRACKET) { // left-left is opening a matrix
-                        output += "<mtable columnlines='none none'><mtr><mtd>"
-                        if (nextSymb)
-                            output += `<${nextSymb.tag} ${extraStyle}>` + nextSymb.output + `</${nextSymb.tag}>`
-                        let left = this.recursiveParser(lex, index + 2, 'leftbracket', extraStyle)
-                        output += left[0]
-                        index = left[1]
-                        return [output, index + 1]
-
-                    } else {
-                        // user wants brackets
-                        output += `<${symb.tag} ${extraStyle}>` + symb.output + `</${symb.tag}>`
-                        let left = this.recursiveParser(lex, index + 1, '', extraStyle)
-                        output += left[0]
-                        index = left[1]
-                        // is there a closing bracket?
-                        if (index < lex.length - 1 && this.AMsymbols[lex[index][1]].ttype == RIGHTBRACKET) {
-                            let nextSymb = this.AMsymbols[lex[index][1]]
-                            output += `<${nextSymb.tag} ${extraStyle}>` + nextSymb.output + `</${nextSymb.tag}>`
-                            index += 1
-                        }
-                        return [output, index]
-                    }
-                    break
-
-                case RIGHTBRACKET:
-                    console.warn('rightBracket', symb)
-                    if (calledFrom == 'func') {  // show a bracket  for functions
-                        return [`<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`, index + 1]
-
-
-                        // } else if (calledFrom == 'acc') {  // show a bracket  for functions
-                        //     throw new Error('should be handled by leftbracket')
-
-                    } else if (lookAheadSymbTtype == LEFTBRACKET) { //  middle ][ boundary of a matrix
-                        index += 2     // eat both brackets
+                    } else if (calledFrom == 'leftbracket') {
+                        // output += "<mtable columnlines='none none'><mtr><mtd>bob1"
+                        output += `<${symb.tag} ${extraStyle}>${symb.output}bob5</${symb.tag}>`
 
                         let left = this.recursiveParser(lex, index + 1, 'leftbracket', extraStyle)
                         output += left[0]
                         index = left[1]
-                        output += `</mtd><mtd>`
-                        return [output, index + 1]
+
+                        // is there a closing bracket?
+                        // if (index < lex.length - 1 && this.AMsymbols[lex[index][1]].ttype == RIGHTBRACKET) {
+                        // let nextSymb = this.AMsymbols[lex[index][1]]
+                        // output += `<${nextSymb.tag} ${extraStyle}>` + nextSymb.output + `tom</${nextSymb.tag}>`
+                        // index += 1
+                        // }
+                        // output += "</mtd></mtr></mtable>"
+                        return [output, index]
+
+
+                        // } else if (lookAheadSymbTtype == LEFTBRACKET) { // left-left is opening a matrix
+                        //     output += "<mtable columnlines='none none'><mtr><mtd>"
+
+                        //     // output += `<${symb.tag} ${extraStyle}>${symb.output}bob4</${symb.tag}>`
+                        //     let left = this.recursiveParser(lex, index + 1, 'leftbracket', extraStyle)
+                        //     output += left[0]
+                        //     index = left[1]
+                        //     output += "</mtd></mtr></mtable>"
+                        //     return [output, index]
+
+                    } else {
+                        // user wants brackets
+                        output += `<${symb.tag} ${extraStyle}>${symb.output}bob3</${symb.tag}>`
+                        index += 1
+
+                        if (lookAheadSymbTtype == LEFTBRACKET) { // left-left is opening a matrix
+                            output += "<mtable columnlines='none none'><mtr><mtd>"
+                            let left = this.recursiveParser(lex, index + 1, 'leftbracket', extraStyle)
+                            output += left[0]
+                            index = left[1]
+                            output += "</mtd></mtr></mtable>"
+                        }
+
+                        return [output, index]
+                    }
+
+                    break
+
+                case RIGHTBRACKET:
+                    console.warn('rightbracket', index, calledFrom, lex[index], (index < lex.length - 1) ? lex[index + 1] : '')
+
+                    if (calledFrom == 'func') {  // show a bracket  for functions
+                        return [`<${symb.tag} ${extraStyle}>${symb.output}tom4</${symb.tag}>`, index + 1]
+
+                    } else if (calledFrom == 'leftbracket') { //  middle ][ boundary of a matrix
+                        output += `<${symb.tag} ${extraStyle}>${symb.output}tom5</${symb.tag}>`
+                        index += 1
+                        return [output, index]
+
+                    } else if (calledFrom == 'acc') {  // show a bracket  for functions
+                        throw new Error('should be handled by leftbracket')
+
+                        // } else if (lookAheadSymbTtype == LEFTBRACKET) { //  middle ][ boundary of a matrix
+                        //     // index += 1
+
+                        //     output += `<${symb.tag} ${extraStyle}>${symb.output}tom1</${symb.tag}>`
+                        //     output += `</mtd><mtd>`
+                        //     let left = this.recursiveParser(lex, index + 1, 'leftbracket', extraStyle)
+                        //     output += left[0]
+                        //     index = left[1]
+                        //     return [output, index + 1]
 
                     } else if (lookAheadSymbTtype == RIGHTBRACKET) { //  ]] end of a matrix
+                        // output += `<${symb.tag} ${extraStyle}>${symb.output}tom2</${symb.tag}>`
                         output += `</mtd></mtr></mtable>`
                         index += 1
 
-                        output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`
-                        return [output, index + 1]
+                        return [output, index]
 
                     } else {   //  something inside a matrix
 
-                        if (index < lex.length - 1) {
-                            let left = this.recursiveParser(lex, index + 1, '', extraStyle)
-                            output += left[0]
-                            index = left[1]
-                        }
-                        output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`
-                        output += `</mtd></mtr></mtable>`
+                        output += '</mtd>'
+                        output += `<${symb.tag} ${extraStyle}>${symb.output}tom3</${symb.tag}>`
+                        output += '<mtd>'
+
+                        // if (index < lex.length - 1) {
+                        //     let left = this.recursiveParser(lex, index + 1, '', extraStyle)
+                        //     output += left[0]
+                        //     index = left[1]
+                        // }
+                        // output += `</mtd></mtr></mtable>`
 
                         return [output, index + 1]
 

@@ -57,10 +57,13 @@ export function test() {
         appnd(div, `bold( [[a,b,c,d]] ) `)
 /* */
         subtitle(div, 'matrices')
-        // appnd(div, 'a b c d')
-        // appnd(div, 'a,b,c,d')
+        appnd(div, '{a,b,c,d}')
+        appnd(div, '(a,b,c,d)')
         appnd(div, '[a,b,c,d]')
         appnd(div, '[[ a,b,c,d ]]')
+        appnd(div, '([ a,b,c,d ])')
+        appnd(div, '{[ a,b,c,d ]}')
+        appnd(div, '[[a,b][c,d]]')
         appnd(div, '[[a,b],[c,d]]')
         appnd(div, '[(a,b),(c,d)]')
         appnd(div, '((a),(b))')
@@ -425,6 +428,7 @@ function appnd(div: HTMLElement, expr: string, comment: string = '') {
 
     let td3 = document.createElement('td')
     let pOut3 = am.naiveParser(expr)
+    td3.style = 'width:50%;'
     td3.innerHTML = pOut3
     tr.appendChild(td3)
 
@@ -437,7 +441,7 @@ function appnd(div: HTMLElement, expr: string, comment: string = '') {
 
 
     let td5 = document.createElement('td')
-    td5.style = 'max-width:400px;'
+    td5.style = 'max-width:200px;'
     tr.appendChild(td5)
     let rOut = am.lexScanner(expr)
     // let rOut2 = JSON.stringify(rOut).replaceAll('],', ']<br/>')
@@ -445,7 +449,7 @@ function appnd(div: HTMLElement, expr: string, comment: string = '') {
     td5.innerHTML = comment + rOut2
 
     let td6 = document.createElement('td')
-    td6.style = 'max-width:25%;';
+    // td6.style = 'max-width:25%;';
     tr.appendChild(td6)
     let pOut2 = pOut.slice(135 + expr.length) // chop off the front
     pOut2 = pOut2.slice(0, -23)   // chop off the end
