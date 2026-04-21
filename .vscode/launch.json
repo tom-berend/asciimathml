@@ -12,7 +12,8 @@
             "request": "launch",
             "name": "Launch Chrome against localhost",
             "url": "http://localhost/asciimathml/amtest.html",
-            "webRoot": "${workspaceFolder}"
+            "webRoot": "${workspaceFolder}",
+            "outFiles": ["${workspaceFolder}/build/**/*.js"]
         }
     ]
 }

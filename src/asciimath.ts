@@ -45,7 +45,7 @@ THE SOFTWARE.
 
 
 type Tag = 'div' | 'p' | 'span' | 'body' | 'a'
-
+type recurseType = 'func' | 'acc' | 'leftbracket' | ''    // enforce calledFrom
 
 // difference from Dr Lippman's version
 // supports -100 correctly, there are two different meanings of minus sign.  difference is no space in number '-100'
@@ -686,11 +686,11 @@ export class AsciiMath {
     }
 
     /** eats both constants and literals */
-    constantEater(lex: [string, number][], index: number, calledFrom = '', extraStyle: string = ''): [string, number] {
+    constantEater(lex: [string, number][], index: number, calledFrom: recurseType = '', extraStyle: string = ''): [string, number] {
         let output = ''
 
         while (index < lex.length && (lex[index][1] === -1 || lex[index][1] === -2 || this.AMsymbols[lex[index][1]].ttype === CONST)) {
-            // console.warn(`  constantEater, ${index}, ${JSON.stringify(lex[index])}, '${calledFrom}'`)
+            console.warn(`  constantEater, ${index}, ${JSON.stringify(lex[index])}, '${calledFrom}'`)
 
             if (lex[index][1] === -1) {  // literal, no symb available
 
@@ -715,7 +715,7 @@ export class AsciiMath {
 
                     // special case - comma.   if called from 'leftbracket' then breaks tablerow else just operator
                 } else if (lex[index][0] === ',') {
-                    output += (calledFrom == 'leftbracket' && false) ? '</mtd><mtd>' : `<mo ${extraStyle}>,</mo>`
+                    output += (calledFrom == 'leftbracket') ? '</mtd><mtd>' : `<mo ${extraStyle}>,</mo>`
                 } else if (this.containsOnlyNumbers(lex[index][0]) && lex[index][0] !== '-') {  // ugly case of minus again
                     output += `<mn ${extraStyle}>` + lex[index][0] + `</mn>`;
                 } else {
@@ -741,10 +741,10 @@ export class AsciiMath {
 
 
     /**  returns parsed string and index of NEXT token */
-    recursiveParser(lex: [string, number][], index: number, calledFrom, extraStyle: string): [string, number] {
+    recursiveParser(lex: [string, number][], index: number, calledFrom: recurseType, extraStyle: string): [string, number] {
 
         let output = ''
-        console.warn(`%cinner partial index: '${index}', lex[index]: '${JSON.stringify(lex[index])}'`, 'background-color:red;')
+        console.warn(`%cinner partial index: '${index}', lex[index]: '${JSON.stringify(lex[index])}' called from '${calledFrom}'`, 'background-color:red;')
 
         while (index < lex.length) {
 
@@ -768,7 +768,11 @@ export class AsciiMath {
                     console.log(`ttype: ${t}`, symb)
 
                 }
-                throw new Error(`endless loop:, index: '${index}', lex[index]: '${JSON.stringify(lex[index])}' `)
+                let str = ''
+                for (let i = index; i < lex.length; i++) {
+                    str += lex[i][0]
+                }
+                throw new Error(`endless loop:, string = '${str}', output = '${output}', 'index: '${index}'`)
             }
 
 
@@ -779,7 +783,7 @@ export class AsciiMath {
                 let left = this.constantEater(lex, index, calledFrom, extraStyle)
                 output += left[0]
                 index = left[1]
-                continue;
+                return [output,index] //continue;
 
 
             } else {
@@ -825,12 +829,10 @@ export class AsciiMath {
 
                     case UNARY:
                         if (symb.input == 'bold') {
-
                             index += 1
-                            symb = (index < lex.length && lex[index][1] >= 0) ? this.AMsymbols[lex[index][1]] : null
 
                             // two cases - brackets and not brackets
-                            if (symb && symb.ttype == LEFTBRACKET) {
+                            if (nextSymb && nextSymb.ttype == LEFTBRACKET) {
                                 let left = this.recursiveParser(lex, index + 1, '', `style='font-weight:bold;'`)
                                 output += left[0]
                                 index = left[1]
@@ -842,7 +844,8 @@ export class AsciiMath {
                                 output += left[0]
                                 index = left[1]
                             }
-                            continue
+                            return[output,index]
+
 
                         } else if (symb.func) {               // eg tan
                             // console.log('func',index)
@@ -920,7 +923,9 @@ export class AsciiMath {
                             // brackets do not go into output for accents, only the insides
                             let left = this.recursiveParser(lex, index + 1, '', extraStyle)
                             output += left[0]
-                            index = left[1]  // if there were brackets, the recursion ate them
+                            
+                            index = left[1] +1 // eat the closing bracket
+                            return[output,index]
 
 
                         } else if (calledFrom == 'leftbracket') {
@@ -930,40 +935,53 @@ export class AsciiMath {
 
                             symb = (index < lex.length && lex[index][1] >= 0) ? this.AMsymbols[lex[index][1]] : null
                             console.log('after FIRST bracket', symb)
-                            let left = this.recursiveParser(lex, index, '', extraStyle)
-                            output += left[0]
-                            index = left[1]
-
-
-                            // if the brackets that opened this loop close, dispay them
-                            symb = (index < lex.length && lex[index][1] >= 0) ? this.AMsymbols[lex[index][1]] : null
-                            console.log('bill3', symb, index, lex[index], lex)
-                            if (symb && symb.ttype == RIGHTBRACKET) {
-                                output += "</mtd></mtr></mtable>"
-                                // don't output these brackets
-                                // output += `<${symb.tag} ${extraStyle}>${symb.output}bill3</${symb.tag}>`
-                                index += 1
-                                break;
-                            }
-
-                        } else {
-                            // user wants brackets
-                            output += `<${symb.tag} ${extraStyle}>${symb.output}sue1</${symb.tag}>`
-                            index += 1
-
                             let left = this.recursiveParser(lex, index, 'leftbracket', extraStyle)
                             output += left[0]
                             index = left[1]
 
-                            // if the brackets that opened this loop appear, display them
-                            symb = (index < lex.length && lex[index][1] >= 0) ? this.AMsymbols[lex[index][1]] : null
-                            console.log('sue2', symb)
-                            if (symb && symb.ttype == RIGHTBRACKET) {
-                                output += `<${symb.tag} ${extraStyle}>${symb.output}sue2</${symb.tag}>`
-                                index += 1
-                                break;
-                            }
 
+                            // // if the brackets that opened this loop close, dispay them
+                            // symb = (index < lex.length && lex[index][1] >= 0) ? this.AMsymbols[lex[index][1]] : null
+                            // console.log('bill3', symb, index, lex[index], lex)
+                            // if (symb && symb.ttype == RIGHTBRACKET) {
+                            //     output += "</mtd></mtr></mtable>"
+                            //     // don't output these brackets
+                            //     // output += `<${symb.tag} ${extraStyle}>${symb.output}bill3</${symb.tag}>`
+                            //     index += 1
+                            //     break;
+                            // }
+
+                        } else {
+                            // user wants brackets
+                            output += `<${symb.tag} ${extraStyle}>${symb.output}LEFT1</${symb.tag}>`
+                            index += 1
+
+                            // look ahead
+                            symb = (index < lex.length && lex[index][1] >= 0) ? this.AMsymbols[lex[index][1]] : null
+                            if (symb && this.AMsymbols[lex[index][1]].ttype == LEFTBRACKET) {
+                                output += `<mtable><mtr><mtd>`
+
+                                let left = this.recursiveParser(lex, index, 'leftbracket', extraStyle)
+                                output += left[0]
+                                index = left[1]
+
+                                output + `</mtd></mtr></mtable>`
+                            }
+                            // // if the brackets that opened this loop appear, display them
+                            // symb = (index < lex.length && lex[index][1] >= 0) ? this.AMsymbols[lex[index][1]] : null
+                            // console.warn(index, lex.length, symb)
+
+                            // if (symb && symb.ttype == RIGHTBRACKET) {
+
+                            //     output += `<${symb.tag} ${extraStyle}>${symb.output}RIGHT1</${symb.tag}>`
+                            //     index += 1
+                            // symb = (index < lex.length && lex[index][1] >= 0) ? this.AMsymbols[lex[index][1]] : null
+                            // if (symb && symb.output == ',') {   // comma means new table row
+                            //     output += `</td></tr><tr><td>`
+                            //     index += 1
+                            //     break;
+                            // }
+                            // }
 
                             // // we should be at a right-bracket now
                             // console.log('bill3',symb)
@@ -973,7 +991,7 @@ export class AsciiMath {
                             // continue
 
                         }
-
+                        break;
                         return [output, index]
 
                         break
@@ -1007,7 +1025,7 @@ export class AsciiMath {
                         } else if (lookAheadSymbTtype == RIGHTBRACKET) { //  ]] end of a matrix
                             // // output += `<${symb.tag} ${extraStyle}>${symb.output}tom7</${symb.tag}>`
                             // output += `</mtd></mtr></mtable>`
-                            // index += 1
+                            index += 1
 
                             return [output, index]
 
@@ -1032,7 +1050,7 @@ export class AsciiMath {
 
                         } else {
 
-                            // output += `<${symb.tag} ${extraStyle}>${symb.output}tom3</${symb.tag}>`
+                            output += `<${symb.tag} ${extraStyle}>${symb.output}RIGHT1</${symb.tag}>`
 
                             // if (index < lex.length - 1) {
                             //     let left = this.recursiveParser(lex, index + 1, calledFrom, extraStyle)
@@ -1087,7 +1105,13 @@ export class AsciiMath {
 
 
 
+
+
+
     }
+
+
+
 
 
 
@@ -1453,7 +1477,8 @@ export class AsciiMath {
                 node.setAttribute("width", "1ex");
                 newFrag.appendChild(node);
                 return [this.createMmlNode("mrow", newFrag), str];
-            case LEFTRIGHT:
+
+            case LEFTRIGHT:   // | bar
                 //    if (rightvert) return [null,str]; else rightvert = true;
                 this.AMnestingDepth++;
                 str = this.AMremoveCharsAndBlanks(str, symbol.input.length);
@@ -1535,8 +1560,9 @@ export class AsciiMath {
     }
 
     AMparseExpr(str, rightbracket) {
-        var symbol, node, result, i,
-            newFrag = document.createDocumentFragment();
+        var symbol, node, result, i
+
+        let newFrag = document.createDocumentFragment();
         do {
             str = this.AMremoveCharsAndBlanks(str, 0);
             result = this.AMparseIexpr(str);
@@ -1644,6 +1670,9 @@ export class AsciiMath {
         }
         return [newFrag, str];
     }
+
+
+
 
     parseMath(str, latex = false) {
         // if (debug) console.groupCollapsed(`% c${str} `, 'background-color:blue')
@@ -1845,6 +1874,242 @@ export class AsciiMath {
         });
 
         return glyphString
+    }
+
+
+
+    /** Simple Expressions  x+1  (x+1)  sqrt(x+1)  frac(x+1)(x+2)   - parses str and returns [node,tailstr]*/
+    TSparseSexpr(lex: [string, number][], index: number, calledFrom: recurseType = '', extraStyle: string = ''): [string, number] {
+
+        if (lex[index][1] === -1) {         // literal
+            if (this.containsOnlyNumbers(lex[index][0])) {
+                return [this.TSmml('mn', lex[index][0]), index + 1]
+            } else {
+                return [this.TSmml('mi', lex[index][0]), index + 1]
+            }
+        }
+
+        if (lex[index][1] === -2) {         // quoted string
+            return [this.TSmml('mtext', lex[index][0]), index + 1]
+        }
+
+        let symb = this.TSgetSymbol(lex, index);
+
+        if (symb == null || symb.ttype == RIGHTBRACKET && this.AMnestingDepth > 0) {
+            return ['', index];
+        }
+        // if (symb.ttype == DEFINITION) {
+        //     str = symb.output + this.AMremoveCharsAndBlanks(str, symb.input.length);
+        //     symb = this.AMgetSymbol(str);
+        // }
+
+        switch (symb.ttype) {
+
+            case UNDEROVER:
+            case CONST:
+                return [this.TSmml(symb.tag, symb.output), index + 1];
+            /*
+            case LEFTBRACKET:   //read (expr+)
+                this.AMnestingDepth++;
+                str = this.AMremoveCharsAndBlanks(str, symb.input.length);
+                result = this.AMparseExpr(str, true);
+                this.AMnestingDepth--;
+                if (typeof symb.invisible == "boolean" && symb.invisible)
+                    node = this.createMmlNode("mrow", result[0]);
+                else {
+                    node = this.createMmlNode("mo", document.createTextNode(symb.output));
+                    node = this.createMmlNode("mrow", node);
+                    node.appendChild(result[0]);
+                }
+                return [node, result[1]];
+            case TEXT:
+                if (symb != this.AMquote) str = this.AMremoveCharsAndBlanks(str, symb.input.length);
+                if (str.charAt(0) == "{") i = str.indexOf("}");
+                else if (str.charAt(0) == "(") i = str.indexOf(")");
+                else if (str.charAt(0) == "[") i = str.indexOf("]");
+                else if (symb == this.AMquote) i = str.slice(1).indexOf("\"") + 1;
+                else i = 0;
+                if (i == -1) i = str.length;
+                st = str.slice(1, i);
+                if (st.charAt(0) == " ") {
+                    node = this.createMmlNode("mspace");
+                    node.setAttribute("width", "1ex");
+                    newFrag.appendChild(node);
+                }
+                newFrag.appendChild(
+                    this.createMmlNode(symb.tag, document.createTextNode(st)));
+                if (st.charAt(st.length - 1) == " ") {
+                    node = this.createMmlNode("mspace");
+                    node.setAttribute("width", "1ex");
+                    newFrag.appendChild(node);
+                }
+                str = this.AMremoveCharsAndBlanks(str, i + 1);
+                return [this.createMmlNode("mrow", newFrag), str];
+             */
+            case UNARYUNDEROVER:
+            case UNARY:
+                let result = this.TSparseSexpr(lex, index + 1);
+
+                if (result[0] == '') {
+                    if (symb.tag == "mi" || symb.tag == "mo") {
+                        return [this.TSmml(symb.tag, symb.output), index + 1];
+                    } else {
+                        result[0] = this.TSmml("mi", "");
+                    }
+                }
+                if (typeof symb.func == "boolean" && symb.func) { // functions
+                    let output = `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`  // eg: tan
+                    let func = this.TSparseSexpr(lex, index + 1, 'func', extraStyle)    // argument for tan
+                    return [output + func[0], func[1]]
+
+
+                    // if (st == "^" || st == "_" || st == "/" || st == "|" || st == "," ||
+                    //     (symb.input.length == 1 && symb.input.match(/\w/) && st != "(")) {
+                    //     return [this.createMmlNode(symb.tag,
+                    //         document.createTextNode(symb.output)), str];
+                    // } else {
+
+                    // }
+                }
+
+                if (typeof symb.acc == "boolean" && symb.acc) { // accents
+
+                    let mover = `<${symb.tag} ${extraStyle}>`  // mover or munder
+                    mover += '<mrow>'
+                    let func = this.TSparseSexpr(lex, index + 1, 'func', extraStyle)    // argument that hat covers
+                    mover += func[0]
+                    // mover +=  `<mo ${extraStyle}>` + symb.output + `</mo>`  // the hat
+                    mover += '</mrow>'
+                    mover += this.TSmml('mo', symb.output)
+                    mover += `</${symb.tag}>`  // mover or munder
+
+                    return [mover, func[1]]
+                }
+
+
+
+
+            /*
+            this.AMremoveBrackets(result[0]);
+            if (symb.input == "sqrt") {           // sqrt
+                return [this.createMmlNode(symb.tag, result[0]), result[1]];
+            } else if (typeof symb.rewriteleftright != "undefined") {    // abs, floor, ceil
+                node = this.createMmlNode("mrow", this.createMmlNode("mo", document.createTextNode(symb.rewriteleftright[0])));
+                node.appendChild(result[0]);
+                node.appendChild(this.createMmlNode("mo", document.createTextNode(symb.rewriteleftright[1])));
+                return [node, result[1]];
+            } else if (symb.input == "cancel") {   // cancel
+                node = this.createMmlNode(symb.tag, result[0]);
+                node.setAttribute("notation", "updiagonalstrike");
+                return [node, result[1]];
+            } else if (typeof symb.acc == "boolean" && symb.acc) {   // accent
+                node = this.createMmlNode(symb.tag, result[0]);
+                var accnode = this.createMmlNode("mo", document.createTextNode(symb.output));
+                if (symb.input == "vec" && (
+                    (result[0].nodeName == "mrow" && result[0].childNodes.length == 1
+                        && result[0].firstChild.firstChild.nodeValue !== null
+                        && result[0].firstChild.firstChild.nodeValue.length == 1) ||
+                    (result[0].firstChild && result[0].firstChild.nodeValue !== null
+                        && result[0].firstChild.nodeValue.length == 1))) {
+                    accnode.setAttribute("stretchy", '');
+                }
+                node.appendChild(accnode);
+                return [node, result[1]];
+            } else {                        // font change command
+                if (typeof symb.codes != "undefined") {
+                    for (i = 0; i < result[0].childNodes.length; i++)
+                        ['mrow', 'mi', 'mo', 'mtext'].map((tag) => {
+                            // if(result[0].nodeName === tag)
+                            //     result[0].textContent = this.substituteGlyphs(result[0].textContent, symbol.codes);
+                            if (result[0].childNodes[i].nodeName === tag)
+                                result[0].childNodes[i].textContent = this.substituteGlyphs(result[0].childNodes[i].textContent, symb.codes);
+                        })
+                }
+
+                node = this.createMmlNode(symb.tag, result[0]);
+                // node.setAttribute(symbol.atname, symbol.atval);
+                return [node, result[1]];
+            }
+        case BINARY:
+            str = this.AMremoveCharsAndBlanks(str, symb.input.length);
+            result = this.AMparseSexpr(str);
+            if (result[0] == null) return [this.createMmlNode("mo",
+                document.createTextNode(symb.input)), str];
+            this.AMremoveBrackets(result[0]);
+            var result2 = this.AMparseSexpr(result[1]);
+            if (result2[0] == null) return [this.createMmlNode("mo",
+                document.createTextNode(symb.input)), str];
+            this.AMremoveBrackets(result2[0]);
+            if (['color', 'class', 'id'].indexOf(symb.input) >= 0) {
+
+                // Get the second argument
+                if (str.charAt(0) == "{") i = str.indexOf("}");
+                else if (str.charAt(0) == "(") i = str.indexOf(")");
+                else if (str.charAt(0) == "[") i = str.indexOf("]");
+                st = str.slice(1, i);
+
+                // Make a mathml node
+                node = this.createMmlNode(symb.tag, result2[0]);
+
+                // Set the correct attribute
+                if (symb.input === "color") node.setAttribute("mathcolor", st)
+                else if (symb.input === "class") node.setAttribute("class", st)
+                else if (symb.input === "id") node.setAttribute("id", st)
+                return [node, result2[1]];
+            }
+            if (symb.input == "root" || symb.output == "stackrel")
+                newFrag.appendChild(result2[0]);
+            newFrag.appendChild(result[0]);
+            if (symb.input == "frac") newFrag.appendChild(result2[0]);
+            return [this.createMmlNode(symb.tag, newFrag), result2[1]];
+        case INFIX:
+            str = this.AMremoveCharsAndBlanks(str, symb.input.length);
+            return [this.createMmlNode("mo", document.createTextNode(symb.output)), str];
+        case SPACE:
+            str = this.AMremoveCharsAndBlanks(str, symb.input.length);
+            node = this.createMmlNode("mspace");
+            node.setAttribute("width", "1ex");
+            newFrag.appendChild(node);
+            newFrag.appendChild(
+                this.createMmlNode(symb.tag, document.createTextNode(symb.output)));
+            node = this.createMmlNode("mspace");
+            node.setAttribute("width", "1ex");
+            newFrag.appendChild(node);
+            return [this.createMmlNode("mrow", newFrag), str];
+
+            case LEFTRIGHT:
+            //    if (rightvert) return [null,str]; else rightvert = true;
+            this.AMnestingDepth++;
+            str = this.AMremoveCharsAndBlanks(str, symb.input.length);
+            result = this.AMparseExpr(str, false);
+            this.AMnestingDepth--;
+            st = "";
+            if (result[0].lastChild != null)
+                st = result[0].lastChild.firstChild.nodeValue;
+            if (st == "|" && str.charAt(0) !== ",") { // its an absolute value subterm
+                node = this.createMmlNode("mo", document.createTextNode(symb.output));
+                node = this.createMmlNode("mrow", node);
+                node.appendChild(result[0]);
+                return [node, result[1]];
+            } else { // the "|" is a \mid so use unicode 2223 (divides) for spacing
+                node = this.createMmlNode("mo", document.createTextNode("\u2223"));
+                node = this.createMmlNode("mrow", node);
+                return [node, str];
+            }
+                */
+            default:
+                //alert("default");
+                return [this.TSmml(symb.tag, symb.output), index + 1];  // it's a constant
+        }
+    }
+
+
+    TSgetSymbol(lex: [string, number][], index: number): AMSymbol | null {
+        return (index < lex.length && lex[index][1] >= 0) ? this.AMsymbols[lex[index][1]] : null
+    }
+
+    TSmml(t: string, frag: string): string {
+        return `<${t}>${frag}</${t}>`
     }
 
 
