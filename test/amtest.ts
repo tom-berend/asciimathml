@@ -21,7 +21,6 @@ export function test() {
         })
 
         /*
-        */
         appnd(div, `"abc"`)
         appnd(div, 'a b c')
         appnd(div, 'alpha  beta  gamma')
@@ -54,10 +53,13 @@ export function test() {
         appnd(div, `bold sqrt log(x)`)
         appnd(div, `bold (x_2)`)
         appnd(div, `bold x_2`)
+        appnd(div, `int x`)
+        appnd(div, `int (x)`)
+        appnd(div, `int (x_2) y z`)
         appnd(div, `bold (x_2) y z`)
         appnd(div, `bold (x_2) x_2 bold (x_2)`)
-        /*
-        appnd(div, `[[a,b,c,d]] `)
+        */
+        appnd(div, `[[a,b,c,d]]`)
         appnd(div, `bold[[a,b,c,d]] `)
         appnd(div, `bold( [[a,b,c,d]] ) `)
         appnd(div, 'a/b')
@@ -65,12 +67,13 @@ export function test() {
         appnd(div, '(a+b)/b')
 
 
-        subtitle(div, 'matrices')
-        appnd(div, '{a,b,c,d}')
-        appnd(div, '(a,b,c,d)')
-        appnd(div, '[a,b,c,d]')
-        appnd(div, '[[ a,b,c,d ]]')
-        appnd(div, '([ a,b,c,d ])')
+       subtitle(div, 'matrices')
+       appnd(div, '{a,b,c,d}')
+       appnd(div, '(a,b,c,d)')
+       appnd(div, '[a,b,c,d]')
+       appnd(div, '[[ a,b,c,d ]]')
+       appnd(div, '([ a,b,c,d ])')
+       /*
         appnd(div, '{[ a,b,c,d ]}')
         appnd(div, '[[a,b]]')
         appnd(div, '[[a,b][c,d]]')
@@ -424,9 +427,6 @@ function subtitle(div: HTMLElement, title: string) {
 }
 
 function appnd(div: HTMLElement, expr: string, comment: string = '') {
-
-    let foo = am.AMparseExpr(expr, false)
-    console.log("foo:", foo)
 
     let tr = document.createElement('tr')
     div.appendChild(tr)
