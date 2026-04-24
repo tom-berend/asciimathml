@@ -377,7 +377,9 @@ const AMsymbols: AMSymbol[] = [
     { input: "bbfr", ttype: UNARY, codes: 'bold-fraktur' },
     { input: "bbit", ttype: UNARY, codes: 'bold-italic' },
     { input: "bbsfit", ttype: UNARY, codes: 'sans-serif-bold-italic' },
-    { input: "bold", ttype: UNARY }
+    { input: "bold", ttype: UNARY },
+
+
 ];
 
 
@@ -661,7 +663,7 @@ export class AsciiMath {
             if (this.safety > 100) {
                 throw new Error(`Endless loop: output '${output}' at index ${index}: ${JSON.stringify(lex[index])}`)
             }
-            console.warn(`%cinner outer index: '${index}', lex[index]: '${JSON.stringify(lex[index])}'`, 'background-color:green;')
+            // console.warn(`%cinner outer index: '${index}', lex[index]: '${JSON.stringify(lex[index])}'`, 'background-color:green;')
 
             let partial = this.recursiveParser(lex, index, '', '')
             output += partial[0]
@@ -690,7 +692,7 @@ export class AsciiMath {
         let output = ''
 
         while (index < lex.length && (lex[index][1] === -1 || lex[index][1] === -2 || this.AMsymbols[lex[index][1]].ttype === CONST)) {
-            console.warn(`  constantEater, ${index}, ${JSON.stringify(lex[index])}, '${calledFrom}'`)
+            // console.warn(`  constantEater, ${index}, ${JSON.stringify(lex[index])}, '${calledFrom}'`)
 
             if (lex[index][1] === -1) {  // literal, no symb available
 
@@ -744,7 +746,7 @@ export class AsciiMath {
     recursiveParser(lex: [string, number][], index: number, calledFrom: recurseType, extraStyle: string): [string, number] {
 
         let output = ''
-        console.warn(`%cinner partial index: '${index}', lex[index]: '${JSON.stringify(lex[index])}' called from '${calledFrom}'`, 'background-color:red;')
+        console.warn(`%cinner partial index: '${index}', lex[index]: '${JSON.stringify(lex[index])}' called from '${calledFrom}'`, 'background-color:darkred;')
 
         while (index < lex.length) {
 
@@ -752,7 +754,7 @@ export class AsciiMath {
             // just for debugging
             let current = index < lex.length ? lex[index] : -1
 
-            console.log('top loop', JSON.stringify(lex[index]))
+            // console.log('top loop', JSON.stringify(lex[index]))
             this.safety += 1
             if (this.safety > 100) {
                 console.log(`output '${output}'`)
@@ -783,7 +785,7 @@ export class AsciiMath {
                 let left = this.constantEater(lex, index, calledFrom, extraStyle)
                 output += left[0]
                 index = left[1]
-                return [output,index] //continue;
+                return [output, index] //continue;
 
 
             } else {
@@ -804,7 +806,7 @@ export class AsciiMath {
                             let left = this.constantEater(lex, index, calledFrom, extraStyle)
                             output += left[0]
                             index = left[1]
-                            // return [output, index]
+                            return [output, index]
 
                         } else if (lookAheadSymbTtype == INFIX) {  // consts like INT (integral) have infix
                             output = `<msubsup>`
@@ -818,7 +820,7 @@ export class AsciiMath {
                             output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`  // eg: tan
 
                             output = `</msubsup>`
-                            // return [output, index]
+                            return [output, index]
 
                         } else {      // acc only eats a single symbol
                             output = `<${symb.tag} ${extraStyle}>` + symb.output + `</${symb.tag}>`
@@ -828,23 +830,35 @@ export class AsciiMath {
                         continue;
 
                     case UNARY:
-                        if (symb.input == 'bold') {
-                            index += 1
 
-                            // two cases - brackets and not brackets
-                            if (nextSymb && nextSymb.ttype == LEFTBRACKET) {
+                        if (symb.input == 'bold') {
+                            index += 1  // eat the bold
+
+                            // three cases - open(, and other
+                            if (nextSymb && nextSymb.input == '(') {   // bold as a function, eat the brackets
                                 let left = this.recursiveParser(lex, index + 1, '', `style='font-weight:bold;'`)
                                 output += left[0]
                                 index = left[1]
 
-                                index += 1  // this is the right bracket
+                                // sanity check
+                                symb = (index < lex.length && lex[index][1] >= 0) ? this.AMsymbols[lex[index][1]] : null
+                                console.assert(symb && symb.input == ')', `expected ')', got '${symb && symb.input}' at index ${index}`)
+
+                                index += 1  // this is the right round bracket
+
+                                // } else if (nextSymb && nextSymb.ttype == LEFTBRACKET) {
+                                //     let left = this.recursiveParser(lex, index, '', `style='font-weight:bold;'`)
+                                //     output += left[0]
+                                //     index = left[1]
+
+                                //     index += 1  // this is the right bracket
 
                             } else {
                                 let left = this.recursiveParser(lex, index, 'acc', `style='font-weight:bold;'`)
                                 output += left[0]
                                 index = left[1]
                             }
-                            return[output,index]
+                            return [output, index]
 
 
                         } else if (symb.func) {               // eg tan
@@ -888,7 +902,7 @@ export class AsciiMath {
                         } else if (symb.codes) {
                             output += ''
 
-                        } else {// eg: sqrt
+                        } else {// eg: sqrt, bold
                             output += `<${symb.tag} ${extraStyle}>`
                             output += `<mrow>`
                             let acc = this.recursiveParser(lex, index + 1, 'acc', extraStyle)
@@ -923,9 +937,9 @@ export class AsciiMath {
                             // brackets do not go into output for accents, only the insides
                             let left = this.recursiveParser(lex, index + 1, '', extraStyle)
                             output += left[0]
-                            
-                            index = left[1] +1 // eat the closing bracket
-                            return[output,index]
+
+                            index = left[1] + 1 // eat the closing bracket
+                            return [output, index]
 
 
                         } else if (calledFrom == 'leftbracket') {
@@ -965,8 +979,17 @@ export class AsciiMath {
                                 output += left[0]
                                 index = left[1]
 
-                                output + `</mtd></mtr></mtable>`
+                                output += `</mtd></mtr></mtable>`
                             }
+
+                            // look ahead, eat the right bracket
+                            symb = (index < lex.length && lex[index][1] >= 0) ? this.AMsymbols[lex[index][1]] : null
+                            if (symb && symb.ttype == RIGHTBRACKET) {
+                                output += `<${symb.tag} ${extraStyle}>${symb.output}LEFT2</${symb.tag}>`
+                                index += 1
+                                return [output, index]
+                            }
+
                             // // if the brackets that opened this loop appear, display them
                             // symb = (index < lex.length && lex[index][1] >= 0) ? this.AMsymbols[lex[index][1]] : null
                             // console.warn(index, lex.length, symb)
@@ -991,8 +1014,6 @@ export class AsciiMath {
                             // continue
 
                         }
-                        break;
-                        return [output, index]
 
                         break
 
@@ -1065,13 +1086,12 @@ export class AsciiMath {
                         break;
 
                     case INFIX:
-                        console.error('missing infix', symb)
 
-
-                        output += `<${symb.tag}>`      // nextSymbol sub, sup goes first
-                        let acc = this.constantEater(lex, index + 1, calledFrom, extraStyle)  // current symbol
-                        output += acc[0]
-                        index = acc[1]
+                        output += `<${symb.tag} ${extraStyle}>`      // nextSymbol sub, sup goes first
+                        // let acc = this.constantEater(lex, index + 1, calledFrom, extraStyle)  // current symbol
+                        let left = this.recursiveParser(lex,index+1,calledFrom,extraStyle)
+                        output += left[0]
+                        index = left[1]
                         output += `</${symb.tag}>`  // close the sub sup
                         return [output, index]
 
