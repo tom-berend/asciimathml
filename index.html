@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>AsciiMath Example</title>
+    </script>
+</head>
+
+<body>
+
+    <div id="buttons"></div>
+
+    <p id="insertMathHere"></p>
+
+    <script type="module">
+        import { AsciiMath } from "./asciimath.js"
+
+        let a = new AsciiMath()
+        let eqn = 'sum_(i=1)^n i^3=((n(n+1))/2)^2'
+        document.getElementById('insertMathHere').appendChild(a.parseMath(eqn))
+
+    </script>
+
+</body>
+
+</html>
