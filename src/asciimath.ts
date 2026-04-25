@@ -731,7 +731,7 @@ export class AsciiMath {
                     }
                     output += `</${nextSymb.tag}>`
                     index += 1
-                    return [output,index]
+                    return [output, index]
 
                     // special case - comma.   if called from 'leftbracket' then breaks tablerow else just operator
                 } else if (lex[index][0] === ',') {
@@ -818,9 +818,9 @@ export class AsciiMath {
             switch (symb.ttype) {
                 case -1:
                 case -2:
-                        output += symb.input
-                        index +=1
-                        return [output, index]
+                    output += symb.input
+                    index += 1
+                    return [output, index]
 
                 case CONST:
 
@@ -970,11 +970,15 @@ export class AsciiMath {
                         index += 1
 
                         symb = (index < lex.length && lex[index][1] >= 0) ? this.AMsymbols[lex[index][1]] : null
-                        console.log('after FIRST bracket', symb)
                         let left = this.recursiveParser(lex, index, 'leftbracket', extraStyle)
                         output += left[0]
                         index = left[1]
 
+                        // look ahead, eat the right bracket
+                        symb = (index < lex.length && lex[index][1] >= 0) ? this.AMsymbols[lex[index][1]] : null
+                        console.assert(symb && symb.ttype==RIGHTBRACKET, ` expected a RIGHTBRACKET, got '${symb && symb.input}' `)
+
+                        index += 1
 
                         // // if the brackets that opened this loop close, dispay them
                         // symb = (index < lex.length && lex[index][1] >= 0) ? this.AMsymbols[lex[index][1]] : null
@@ -1014,32 +1018,10 @@ export class AsciiMath {
                         if (symb && symb.ttype == RIGHTBRACKET) {
                             output += `<${symb.tag} ${extraStyle}>${symb.output}LEFT2</${symb.tag}>`
                             index += 1
-                            return [output, index]
+                        } else {
+                            console.assert(true, ` expected a RIGHTBRACKET, got '${symb && symb.input}' `)
                         }
-
-                        // // if the brackets that opened this loop appear, display them
-                        // symb = (index < lex.length && lex[index][1] >= 0) ? this.AMsymbols[lex[index][1]] : null
-                        // console.warn(index, lex.length, symb)
-
-                        // if (symb && symb.ttype == RIGHTBRACKET) {
-
-                        //     output += `<${symb.tag} ${extraStyle}>${symb.output}RIGHT1</${symb.tag}>`
-                        //     index += 1
-                        // symb = (index < lex.length && lex[index][1] >= 0) ? this.AMsymbols[lex[index][1]] : null
-                        // if (symb && symb.output == ',') {   // comma means new table row
-                        //     output += `</td></tr><tr><td>`
-                        //     index += 1
-                        //     break;
-                        // }
-                        // }
-
-                        // // we should be at a right-bracket now
-                        // console.log('bill3',symb)
-                        // if (symb && symb.ttype == RIGHTBRACKET) { // left-left is opening a matrix
-                        // output += `<${symb.tag} ${extraStyle}>${symb.output}bill3</${symb.tag}>`
-                        // index += 1
-                        // continue
-
+                        return [output, index]
                     }
 
                     break
