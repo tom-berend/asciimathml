@@ -483,6 +483,9 @@ export class AsciiMath {
             ['alpha beta gamma junk', [["alpha", 0], ["beta", 1], ["gamma", 8], ["junk", -1]]],    // converts TEX notation
             ['norm(x+.1)', [["norm", 194], ["(", 115], ["x", -1], ["+", -1], [".1", -1], [")", 116]]],    // numbers
             ['a+b-c*d', [["a", -1], ["+", -1], ["b", -1], ["-", -1], ["c", -1], ["*", 38], ["d", -1]]],    // numbers
+            ['=)', [["=",-1],[")",116]] ],
+
+
         ]
 
         tests.map((test) => {
@@ -555,7 +558,7 @@ export class AsciiMath {
             }
 
             // always break on a space (not in a quoted string)
-            if ([' ', '{', '}'].includes(ch)) {  // separators like space, brackets, comma
+            if ([' ', '{', '}','(',')','='].includes(ch)) {  // separators like space, brackets, comma
                 if (pos > tokenStart) {  // longer than just this separator character
                     tokens.push(this.lexScannerSnip(text.slice(tokenStart, pos))) // what came before
                     tokenStart = pos
@@ -567,6 +570,7 @@ export class AsciiMath {
                 pos = tokenStart
                 continue
             }
+
 
             // break on change from symbol to alphabet to numbers
             if (pos > tokenStart && (
@@ -740,18 +744,21 @@ export class AsciiMath {
                     output += `<mn ${extraStyle}>` + lex[index][0] + `</mn>`;
                 } else {
                     let charArray = lex[index][0].split('')
-                    charArray.forEach(char =>
-                        output += ['+', '/', '-', '*', '%', '$'].includes(char) ? `<mo ${extraStyle}>${char}</mo>` : `<mi ${extraStyle}>${char}</mi>`
-                    );
+                    for (let i = 0; i < charArray.length; i++) {
+                        output = ['+', '/', '-', '*', '%', '$'].includes(charArray[i]) ? `<mo ${extraStyle}>${charArray[i]}</mo>` : `<mi ${extraStyle}>${charArray[i]}</mi>`
+                    }
+                    index += 1
                 }
-
+                return [output, index]
             } else if (lex[index][1] === -2) {  // quoted string
                 output += `<mtext ${extraStyle}>` + lex[index][0] + `</mtext>`;
                 index += 1
+                return [output, index]
 
             } else {
                 let symb = this.AMsymbols[lex[index][1]]   // the lex we are looking at
                 output += `<${symb.tag} ${extraStyle}>` + symb.output + `</${symb.tag}>`
+                return [output, index]
             }
             // every path comes through here
             index += 1
@@ -976,7 +983,7 @@ export class AsciiMath {
 
                         // look ahead, eat the right bracket
                         symb = (index < lex.length && lex[index][1] >= 0) ? this.AMsymbols[lex[index][1]] : null
-                        console.assert(symb && symb.ttype==RIGHTBRACKET, ` expected a RIGHTBRACKET, got '${symb && symb.input}' `)
+                        console.assert(symb && symb.ttype == RIGHTBRACKET, ` expected a RIGHTBRACKET, got '${symb && symb.input}' `)
 
                         index += 1
 
@@ -1118,6 +1125,16 @@ export class AsciiMath {
                     index += 1
                     break;
 
+                case BINARY:
+
+                    index += 1  // usually mover or munder
+
+                    let part1 = this.recursiveParser(lex, index, 'acc', extraStyle)
+                    let part2 = this.recursiveParser(lex, part1[1], 'acc', extraStyle)
+
+                    output += `<${symb.input} ${extraStyle}><mover><mrow>${part2[0]}</mrow><mrow>${[part1[0]]}</mrow></${symb.input}>`
+                    index = part2[1]
+                    break;
 
 
                 default:
