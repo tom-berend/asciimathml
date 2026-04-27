@@ -1,10 +1,11 @@
 
 
-import { AsciiMath } from "../src/asciimath.js"
+import { AsciiMath, AMsymbols } from "../src/asciimath.js"
 let am = new AsciiMath()
 
 export function test() {
 
+    testLexScanner()
 
     let d = document.getElementById('test')
     if (d) {
@@ -21,12 +22,13 @@ export function test() {
         })
 
         /*
+        */
         appnd(div, `"abc"`)
         appnd(div, 'a b c, a,b,c')
-        appnd(div, 'quad a quad b qquadc')
         appnd(div, 'alpha  beta  gamma')
         appnd(div, 'NN')
         appnd(div, 'NN ZZ')
+        appnd(div, 'quad a quad b qquadc')
         appnd(div, 'a NN alpha ZZ')
         appnd(div, 'a + b - c * d xx e')
         appnd(div, '-200-100 - 50  -a-b')
@@ -59,12 +61,13 @@ export function test() {
         appnd(div, `int (x_2) y z`)
         appnd(div, `bold (x_2) y z`)
         appnd(div, `bold (x_2) x_2 bold (x_2)`)
+
         appnd(div, `[[a,b,c,d]]`)
-        appnd(div, `bold[[a,b,c,d]] `)
+        appnd(div, `bold( [[a,b,c,d]] )`)
         appnd(div, `bold( [[a,b,c,d]] ) `)
         appnd(div, 'a/b')
         appnd(div, 'a+b/b')
-        */
+        appnd(div, '(a+b)/b')
 
 
 
@@ -88,15 +91,15 @@ export function test() {
         appnd(div, '[a,b,c,d]')
         appnd(div, '[[ a,b,c,d ]]')
         appnd(div, '([ a,b,c,d ])')
+        appnd(div, '{[ a,b,c,d ]}')
+        appnd(div, '[[a,b]]')
+        appnd(div, '[[a,b][c,d]]')
+        appnd(div, '[[a,b],[c,d]]')
+        appnd(div, '[(a,b),(c,d)]')
+        appnd(div, '((a),(b))')
+        appnd(div, '([a],[b])')
+        appnd(div, '(  a,b )')
         /*
-         appnd(div, '{[ a,b,c,d ]}')
-         appnd(div, '[[a,b]]')
-         appnd(div, '[[a,b][c,d]]')
-         appnd(div, '[[a,b],[c,d]]')
-         appnd(div, '[(a,b),(c,d)]')
-         appnd(div, '((a),(b))')
-         appnd(div, '([a],[b])')
-         appnd(div, '(  a,b )')
          /*
 
          return
@@ -505,4 +508,45 @@ function appnd(div: HTMLElement, expr: string, comment: string = '') {
 
 
 }
+
+function testLexScanner() {
+    console.log('testing LexScanner')
+    let cOp = 119, cCl = 120  // curly brackets, but might move one day
+    let rOp = 115, rCl = 116
+    // let x = (s: string) => this.AMsymbols.findIndex((symbol) => symbol.input === s || symbol.tex === s)
+    // ['(x:} {:x)', [['(', rOp], ['x', -1], [':}', x(':}')], ['{:', x('{:')], ['x', -1], [')', rCl]]],
+    // ['bigvee', [['vvv', x('vvv')]]],    // converts TEX notation
+    let tests: [string, [string, number][]][] = [
+
+        ['"hi"', [['hi', -2]]],
+        ["tan(x)", [["tan", 176], ["(", 115], ["x", -1], [")", 116]]],
+        ["{:  :}", [["{:", 129], [":}", 130]]],
+        ['- 100 -200 "-300" .400 0.500', [["-", -1], ["100", -1], ["-200", -1], ["-300", -2], [".400", -1], ["0.500", -1]]],    // numbers,    // numbers
+        ['ab{cd}ef', [['ab', -1], ['{', cOp], ['cd', -1], ['}', cCl], ['ef', -1]]],
+        ['{cd}ef', [['{', cOp], ['cd', -1], ['}', cCl], ['ef', -1]]],
+        ['ab{cd}', [['ab', -1], ['{', cOp], ['cd', -1], ['}', cCl]]],
+        ['frac{cd}', [['frac', 240], ['{', cOp], ['cd', -1], ['}', cCl]]],
+        ['alpha beta gamma junk', [["alpha", 0], ["beta", 1], ["gamma", 8], ["junk", -1]]],    // converts TEX notation
+        ['norm(x+.1)', [["norm", 194], ["(", 115], ["x", -1], ["+", -1], [".1", -1], [")", 116]]],    // numbers
+        ['a+b-c*d', [["a", -1], ["+", -1], ["b", -1], ["-", -1], ["c", -1], ["*", 38], ["d", -1]]],    // numbers
+        ['=)', [["=", -1], [")", 116]]],
+
+
+    ]
+
+    tests.map((test) => {
+        let results = am.lexScanner(test[0])  // run the test
+
+        let r_in = JSON.stringify(test[1])
+        let r_out = JSON.stringify(results)
+
+        if (r_in != r_out) {
+            console.assert(r_in === r_out, `${test[0]} expected ${r_in} got ${r_out} `)
+            console.log(r_in)
+            console.log(r_out)
+        }
+    })
+}
+
+
 

@@ -82,7 +82,7 @@ const fixphi = true;  		//false to return to legacy phi/varphi mapping
 
 const AMquote: AMSymbol = { input: "\"", tag: "mtext", output: "mbox", tex: null, ttype: TEXT };
 
-const AMsymbols: AMSymbol[] = [
+export const AMsymbols: AMSymbol[] = [
     //some greek symbols
     { input: "alpha", tag: "mi", output: "\u03B1", tex: null, ttype: CONST },
     { input: "beta", tag: "mi", output: "\u03B2", tex: null, ttype: CONST },
@@ -421,7 +421,6 @@ const AMbb = ["𝐀", "𝐁", "𝐂", "𝐃", "𝐄", "𝐅", "𝐆", "𝐇", "�
 
 export class AsciiMath {
 
-    AMsymbols: AMSymbol[]
     AMquote
 
     noMathML = false
@@ -450,7 +449,6 @@ export class AsciiMath {
     safety = 0
 
     constructor(attributes?: LooseObject) {
-        this.AMsymbols = AMsymbols  // load parsing table
 
         // this.mathcolor = attributes.mathcolor
         // this.mathfontsize = attributes.mathfontsize
@@ -459,47 +457,6 @@ export class AsciiMath {
         // this.displaystyle = attributes.displaystyle
         // this.decimalsign = attributes.decimalsign
 
-        this.testLexScanner()
-    }
-
-    testLexScanner() {
-        console.log('testing LexScanner')
-        let cOp = 119, cCl = 120  // curly brackets, but might move one day
-        let rOp = 115, rCl = 116
-        let x = (s: string) => this.AMsymbols.findIndex((symbol) => symbol.input === s || symbol.tex === s)
-        let tests: [string, [string, number][]][] = [
-
-            ['"hi"', [['hi', -2]]],
-            ["tan(x)", [["tan", 176], ["(", 115], ["x", -1], [")", 116]]],
-            ["{:  :}", [["{:", 129], [":}", 130]]],
-            ['- 100 -200 "-300" .400 0.500', [["-", -1], ["100", -1], ["-200", -1], ["-300", -2], [".400", -1], ["0.500", -1]]],    // numbers,    // numbers
-            ['ab{cd}ef', [['ab', -1], ['{', cOp], ['cd', -1], ['}', cCl], ['ef', -1]]],
-            ['{cd}ef', [['{', cOp], ['cd', -1], ['}', cCl], ['ef', -1]]],
-            ['ab{cd}', [['ab', -1], ['{', cOp], ['cd', -1], ['}', cCl]]],
-            ['frac{cd}', [['frac', 240], ['{', cOp], ['cd', -1], ['}', cCl]]],
-            // ['"\\{ { and } \\}"', [['\\{ { and } \\}', -1]]],
-            ['(x:} {:x)', [['(', rOp], ['x', -1], [':}', x(':}')], ['{:', x('{:')], ['x', -1], [')', rCl]]],
-            ['bigvee', [['vvv', x('vvv')]]],    // converts TEX notation
-            ['alpha beta gamma junk', [["alpha", 0], ["beta", 1], ["gamma", 8], ["junk", -1]]],    // converts TEX notation
-            ['norm(x+.1)', [["norm", 194], ["(", 115], ["x", -1], ["+", -1], [".1", -1], [")", 116]]],    // numbers
-            ['a+b-c*d', [["a", -1], ["+", -1], ["b", -1], ["-", -1], ["c", -1], ["*", 38], ["d", -1]]],    // numbers
-            ['=)', [["=",-1],[")",116]] ],
-
-
-        ]
-
-        tests.map((test) => {
-            let results = this.lexScanner(test[0])  // run the test
-
-            let r_in = JSON.stringify(test[1])
-            let r_out = JSON.stringify(results)
-
-            if (r_in != r_out) {
-                console.assert(r_in === r_out, `${test[0]} expected ${r_in} got ${r_out} `)
-                console.log(r_in)
-                console.log(r_out)
-            }
-        })
     }
 
 
@@ -558,7 +515,7 @@ export class AsciiMath {
             }
 
             // always break on a space (not in a quoted string)
-            if ([' ', '{', '}','(',')','='].includes(ch)) {  // separators like space, brackets, comma
+            if ([' ', '{', '}', '(', ')', '='].includes(ch)) {  // separators like space, brackets, comma
                 if (pos > tokenStart) {  // longer than just this separator character
                     tokens.push(this.lexScannerSnip(text.slice(tokenStart, pos))) // what came before
                     tokenStart = pos
@@ -601,13 +558,13 @@ export class AsciiMath {
         // console.warn(`${snip}`)
         // special case - a single minus sign is always a symbol.  Lex scanner doesn't look backwards, could be -100 or a-b
         if (snip === '-')
-            return (['-', this.AMsymbols.findIndex((symbol) => symbol.input === snip)])
+            return (['-', AMsymbols.findIndex((symbol) => symbol.input === snip)])
 
-        let index = this.AMsymbols.findIndex((symbol) => symbol.input === snip || symbol.tex === snip)
+        let index = AMsymbols.findIndex((symbol) => symbol.input === snip || symbol.tex === snip)
         if (index === -1) {    // not in symbol table
             return [snip, LEX_STRING]   // command
         } else {
-            return [this.AMsymbols[index].input, index]  // a command from the table (always AM, not TEX)
+            return [AMsymbols[index].input, index]  // a command from the table (always AM, not TEX)
         }
     }
     /** helper for detecting break between alphas and symbols (assumes no Symbol contains both) */
@@ -627,7 +584,7 @@ export class AsciiMath {
     /** given the next few characters to parse, is there an unambiguous symbol?    */
     longestSymbol(str: string): string {  // returns empty string if no match
         let lastSymb = ''
-        for (const [key, value] of Object.entries(this.AMsymbols)) {
+        for (const [key, value] of Object.entries(AMsymbols)) {
             if (str.slice(0, value.input.length) === value.input) {     // match, but may be ambiguous
                 if (value.input.length > lastSymb.length) {
                     lastSymb = value.input
@@ -664,6 +621,7 @@ export class AsciiMath {
         this.safety = 0
 
         while (index < lex.length) {
+            let oldIndex = index
             if (this.safety > 100) {
                 throw new Error(`Endless loop: output '${output}' at index ${index}: ${JSON.stringify(lex[index])}`)
             }
@@ -673,16 +631,20 @@ export class AsciiMath {
             output += partial[0]
             index = partial[1]
 
-            let symb = (index < lex.length && lex[index][1] >= 0) ? this.AMsymbols[lex[index][1]] : null
+            if (oldIndex == index) // sanity check - did we eat anything?
+                throw new Error(`didn't move forward on ${lex[index][0]}`)
+
+
+            let symb = (index < lex.length && lex[index][1] >= 0) ? AMsymbols[lex[index][1]] : null
             if (symb && symb.ttype == INFIX) {
                 output = `<msubsup>`
                 index += 1
                 output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`
                 index += 1
-                symb = this.AMsymbols[lex[index][1]]   // the lex we are looking at
+                symb = AMsymbols[lex[index][1]]   // the lex we are looking at
                 output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`
                 index += 1
-                symb = this.AMsymbols[lex[index][1]]   // the lex we are looking at
+                symb = AMsymbols[lex[index][1]]   // the lex we are looking at
                 output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`
 
                 output = `</msubsup>`
@@ -711,14 +673,15 @@ export class AsciiMath {
     /** eats both constants and literals */
     constantEater(lex: [string, number][], index: number, calledFrom: recurseType = '', extraStyle: string = ''): [string, number] {
         let output = ''
+        let oldIndex = index;
 
-        while (index < lex.length && (lex[index][1] === -1 || lex[index][1] === -2 || this.AMsymbols[lex[index][1]].ttype === CONST)) {
+        while (index < lex.length && (lex[index][1] === -1 || lex[index][1] === -2 || AMsymbols[lex[index][1]].ttype === CONST)) {
             // console.warn(`  constantEater, ${index}, ${JSON.stringify(lex[index])}, '${calledFrom}'`)
 
             if (lex[index][1] === -1) {  // literal, no symb available
 
                 // a special case for infix - we look ahead.  if infix we must infix first
-                let nextSymb = (index + 1 < lex.length && lex[index + 1][1] >= 0) ? this.AMsymbols[lex[index + 1][1]] : null
+                let nextSymb = (index + 1 < lex.length && lex[index + 1][1] >= 0) ? AMsymbols[lex[index + 1][1]] : null
                 if (nextSymb && nextSymb.ttype === INFIX) {
                     output += `<${nextSymb.tag}>`
 
@@ -735,17 +698,19 @@ export class AsciiMath {
                     }
                     output += `</${nextSymb.tag}>`
                     index += 1
-                    return [output, index]
+                    continue; //return [output, index]
 
                     // special case - comma.   if called from 'leftbracket' then breaks tablerow else just operator
                 } else if (lex[index][0] === ',') {
                     output += (calledFrom == 'leftbracket') ? '</mtd><mtd>' : `<mo ${extraStyle}>,</mo>`
+                    index += 1
                 } else if (this.containsOnlyNumbers(lex[index][0]) && lex[index][0] !== '-') {  // ugly case of minus again
                     output += `<mn ${extraStyle}>` + lex[index][0] + `</mn>`;
+                    index += 1
                 } else {
                     let charArray = lex[index][0].split('')
                     for (let i = 0; i < charArray.length; i++) {
-                        output = ['+', '/', '-', '*', '%', '$'].includes(charArray[i]) ? `<mo ${extraStyle}>${charArray[i]}</mo>` : `<mi ${extraStyle}>${charArray[i]}</mi>`
+                        output += ['+', '/', '-', '*', '%', '$'].includes(charArray[i]) ? `<mo ${extraStyle}>${charArray[i]}</mo>` : `<mi ${extraStyle}>${charArray[i]}</mi>`
                     }
                     index += 1
                 }
@@ -753,16 +718,27 @@ export class AsciiMath {
             } else if (lex[index][1] === -2) {  // quoted string
                 output += `<mtext ${extraStyle}>` + lex[index][0] + `</mtext>`;
                 index += 1
-                return [output, index]
+                continue;  //return [output, index]
 
-            } else {
-                let symb = this.AMsymbols[lex[index][1]]   // the lex we are looking at
-                output += `<${symb.tag} ${extraStyle}>` + symb.output + `</${symb.tag}>`
-                return [output, index]
+            } else {    // CONST
+                // throw new Error('cannot be anything else')
+                let symb = AMsymbols[lex[index][1]]   // the lex we are looking at
+                if (symb.ttype == CONST) {
+                    // console.assert(symb.ttype == CONST, 'expected CONST')
+                    output += `<${symb.tag} ${extraStyle}>` + symb.output + `</${symb.tag}>`
+                    index += 1
+                    continue; //return [output, index]
+                } else {
+                    break       // not literal or string, not CONST, we have eaten all we can
+                }
             }
             // every path comes through here
-            index += 1
+            // index += 1
         }
+
+        // if (oldIndex == index) // sanity check - did we eat anything?
+        //     throw new Error(`didn't move forward on ${lex[index][0]}`)
+
         return [output, index]
     }
 
@@ -782,7 +758,7 @@ export class AsciiMath {
         if (this.safety > 100) {
             console.log(`output '${output}'`)
             if (lex[index][1] >= 0) {
-                let symb = this.AMsymbols[lex[index][1]]   // the lex we are looking at
+                let symb = AMsymbols[lex[index][1]]   // the lex we are looking at
                 let t: string = symb.ttype.toString()
                 if (symb.ttype == 0) t = 'CONST'
                 if (symb.ttype == 1) t = 'UNARY'
@@ -797,6 +773,9 @@ export class AsciiMath {
             for (let i = index; i < lex.length; i++) {
                 str += lex[i][0]
             }
+            console.log(lex)
+            // index += 10
+            // return[output,index]
             throw new Error(`endless loop:, string = '${str}', output = '${output}', 'index: '${index}'`)
         }
 
@@ -811,14 +790,14 @@ export class AsciiMath {
             return [output, index] //continue;
 
 
+
         } else {
 
-            let symb = this.AMsymbols[lex[index][1]]   // the lex we are looking at
-            let nextSymb = (index + 1 < lex.length && lex[index + 1][1] >= 0) ? this.AMsymbols[lex[index + 1][1]] : null
+            let symb = AMsymbols[lex[index][1]]   // the lex we are looking at
+            let nextSymb = (index + 1 < lex.length && lex[index + 1][1] >= 0) ? AMsymbols[lex[index + 1][1]] : null
 
             // define lookAhead symbol type so don't have to keep checking if there is an entry in AMsymbol.
-            let lookAheadSymbTtype = (nextSymb) ? this.AMsymbols[lex[index + 1][1]].ttype : -1
-
+            let lookAheadSymbTtype = (nextSymb) ? AMsymbols[lex[index + 1][1]].ttype : -1
 
             // console.log('symb in recursive', symb, lookAheadSymbTtype)
 
@@ -831,31 +810,32 @@ export class AsciiMath {
 
                 case CONST:
 
-                    if (calledFrom == 'func' || calledFrom == '') {
-                        let left = this.constantEater(lex, index, calledFrom, extraStyle)
-                        output += left[0]
-                        index = left[1]
-                        return [output, index]
+                    // if (calledFrom == 'func' || calledFrom == '') {
+                    //     let left = this.constantEater(lex, index, calledFrom, extraStyle)
+                    //     output += left[0]
+                    //     index = left[1]
+                    //     console.log('const loop1', symb)
 
-                        // } else if (lookAheadSymbTtype == INFIX) {  // consts like INT (integral) have infix
-                        //     output = `<msubsup>`
-                        //     index += 1
-                        //     output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`  // eg: tan
-                        //     index += 1
-                        //     symb = this.AMsymbols[lex[index][1]]   // the lex we are looking at
-                        //     output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`  // eg: tan
-                        //     index += 1
-                        //     symb = this.AMsymbols[lex[index][1]]   // the lex we are looking at
-                        //     output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`  // eg: tan
+                    // } else if (lookAheadSymbTtype == INFIX) {  // consts like INT (integral) have infix
+                    //     output = `<msubsup>`
+                    //     index += 1
+                    //     output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`  // eg: tan
+                    //     index += 1
+                    //     symb = AMsymbols[lex[index][1]]   // the lex we are looking at
+                    //     output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`  // eg: tan
+                    //     index += 1
+                    //     symb = AMsymbols[lex[index][1]]   // the lex we are looking at
+                    //     output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`  // eg: tan
 
-                        //     output = `</msubsup>`
-                        //     return [output, index]
+                    //     output = `</msubsup>`
+                    //     return [output, index]
 
-                    } else {      // acc only eats a single symbol
-                        output = `<${symb.tag} ${extraStyle}>` + symb.output + `</${symb.tag}>`
-                        index += 1
-                        // return [output, index]
-                    }
+                    // } else {      // acc only eats a single symbol
+                    output = `<${symb.tag} ${extraStyle}>` + symb.output + `</${symb.tag}>`
+                    index += 1
+                    console.log('const loop2', symb)
+                    // return [output, index]
+                    // }
                     return [output, index];
 
                 case UNARY:
@@ -870,7 +850,7 @@ export class AsciiMath {
                             index = left[1]
 
                             // sanity check
-                            symb = (index < lex.length && lex[index][1] >= 0) ? this.AMsymbols[lex[index][1]] : null
+                            symb = (index < lex.length && lex[index][1] >= 0) ? AMsymbols[lex[index][1]] : null
                             console.assert(symb && symb.input == ')', `expected ')', got '${symb && symb.input}' at index ${index}`)
 
                             index += 1  // this is the right round bracket
@@ -954,7 +934,7 @@ export class AsciiMath {
                         index = inside[1]
 
                         if (index < lex.length) {
-                            let rightb = this.AMsymbols[lex[index][1]]   // the closing bracket
+                            let rightb = AMsymbols[lex[index][1]]   // the closing bracket
                             if (rightb && rightb.ttype == RIGHTBRACKET) {   // safety check, it SHOULD be a rightbracket
                                 output += `<${rightb.tag} ${extraStyle}>${rightb.output}</${rightb.tag}>`
                                 index += 1
@@ -976,19 +956,19 @@ export class AsciiMath {
                         // output += `<${symb.tag} ${extraStyle}>${symb.output}bob3</${symb.tag}>`
                         index += 1
 
-                        symb = (index < lex.length && lex[index][1] >= 0) ? this.AMsymbols[lex[index][1]] : null
+                        symb = (index < lex.length && lex[index][1] >= 0) ? AMsymbols[lex[index][1]] : null
                         let left = this.recursiveParser(lex, index, 'leftbracket', extraStyle)
                         output += left[0]
                         index = left[1]
 
                         // look ahead, eat the right bracket
-                        symb = (index < lex.length && lex[index][1] >= 0) ? this.AMsymbols[lex[index][1]] : null
+                        symb = (index < lex.length && lex[index][1] >= 0) ? AMsymbols[lex[index][1]] : null
                         console.assert(symb && symb.ttype == RIGHTBRACKET, ` expected a RIGHTBRACKET, got '${symb && symb.input}' `)
 
                         index += 1
 
                         // // if the brackets that opened this loop close, dispay them
-                        // symb = (index < lex.length && lex[index][1] >= 0) ? this.AMsymbols[lex[index][1]] : null
+                        // symb = (index < lex.length && lex[index][1] >= 0) ? AMsymbols[lex[index][1]] : null
                         // console.log('bill3', symb, index, lex[index], lex)
                         // if (symb && symb.ttype == RIGHTBRACKET) {
                         //     output += "</mtd></mtr></mtable>"
@@ -1004,8 +984,8 @@ export class AsciiMath {
                         index += 1
 
                         // look ahead
-                        symb = (index < lex.length && lex[index][1] >= 0) ? this.AMsymbols[lex[index][1]] : null
-                        if (symb && this.AMsymbols[lex[index][1]].ttype == LEFTBRACKET) {
+                        symb = (index < lex.length && lex[index][1] >= 0) ? AMsymbols[lex[index][1]] : null
+                        if (symb && AMsymbols[lex[index][1]].ttype == LEFTBRACKET) {
                             output += `<mtable><mtr><mtd>`
 
                             let left = this.recursiveParser(lex, index, 'leftbracket', extraStyle)
@@ -1020,7 +1000,7 @@ export class AsciiMath {
                         }
 
                         // look ahead, eat the right bracket
-                        symb = (index < lex.length && lex[index][1] >= 0) ? this.AMsymbols[lex[index][1]] : null
+                        symb = (index < lex.length && lex[index][1] >= 0) ? AMsymbols[lex[index][1]] : null
                         console.log('TTT', symb)
                         if (symb && symb.ttype == RIGHTBRACKET) {
                             output += `<${symb.tag} ${extraStyle}>${symb.output}LEFT2</${symb.tag}>`
@@ -1077,8 +1057,8 @@ export class AsciiMath {
                         // index = left[1]
 
                         // is there a closing bracket?
-                        // if (index < lex.length - 1 && this.AMsymbols[lex[index][1]].ttype == RIGHTBRACKET) {
-                        // let nextSymb = this.AMsymbols[lex[index][1]]
+                        // if (index < lex.length - 1 && AMsymbols[lex[index][1]].ttype == RIGHTBRACKET) {
+                        // let nextSymb = AMsymbols[lex[index][1]]
                         // output += `<${nextSymb.tag} ${extraStyle}>` + nextSymb.output + `tom</${nextSymb.tag}>`
                         // index += 1
                         // }
@@ -1154,1008 +1134,6 @@ export class AsciiMath {
 
 
 
-    }
-
-
-
-
-
-
-
-
-
-
-    /** Find and translate all math on a page.  if spanclassAM is provided then it
-    * is the tag to look for.  Perhaps 'span' is a good value.  If it is NOT
-    * provided, then we will look for this.AMdelimiter1 (by default a backtick)
-    */
-    translate(spanclassAM?) {
-        if (!this.translated) { // run this only once
-            this.translated = true;
-            var body = document.getElementsByTagName("body")[0];
-            if (this.translateASCIIMath) this.AMprocessNode(body, false, spanclassAM);
-        }
-    }
-
-    createElementXHTML(t: string) {
-        return document.createElementNS("http://www.w3.org/1999/xhtml", t);
-    }
-
-
-    AMcreateElementMathML(t) {
-        return document.createElementNS(AMmathml, t);
-    }
-
-    createMmlNode(t, frag?) {
-        let node = document.createElementNS(AMmathml, t);
-        if (frag) node.appendChild(frag);
-        return node;
-    }
-
-    newcommand(oldstr, newstr) {
-        this.AMsymbols.push({ input: oldstr, tag: "mo", output: newstr, tex: null, ttype: DEFINITION });
-        this.refreshSymbols();
-    }
-
-    newsymbol(symbolobj) {
-        this.AMsymbols.push(symbolobj);
-        this.refreshSymbols();
-    }
-
-
-
-    compareNames(s1, s2) {
-        if (s1.input > s2.input) return 1
-        else return -1;
-    }
-
-
-    initSymbols() {
-        var i;
-        var symlen = this.AMsymbols.length;
-        for (i = 0; i < symlen; i++) {
-            if (this.AMsymbols[i].tex) {
-                this.AMsymbols.push({
-                    input: this.AMsymbols[i].tex,
-                    tex: null,
-                    tag: this.AMsymbols[i].tag, output: this.AMsymbols[i].output, ttype: this.AMsymbols[i].ttype,
-                    acc: (this.AMsymbols[i].acc || false)
-                });
-            }
-        }
-        this.refreshSymbols();
-    }
-
-    refreshSymbols() {
-        var i;
-        this.AMsymbols.sort(this.compareNames);
-        for (i = 0; i < this.AMsymbols.length; i++)
-            this.AMnames[i] = this.AMsymbols[i].input;
-    }
-
-    define(oldstr, newstr) {
-        this.AMsymbols.push({ input: oldstr, tag: "mo", output: newstr, tex: null, ttype: DEFINITION });
-        this.refreshSymbols(); // this may be a problem if many symbols are defined!
-    }
-
-    AMremoveCharsAndBlanks(str, n) {
-        //remove n characters and any following blanks
-        var st;
-        if (str.charAt(n) == "\\" && str.charAt(n + 1) != "\\" && str.charAt(n + 1) != " ")
-            st = str.slice(n + 1);
-        else st = str.slice(n);
-        for (var i = 0; i < st.length && st.charCodeAt(i) <= 32; i = i + 1);
-        return st.slice(i);
-    }
-
-    /** returns position >= n in sorted token array arr where str appears or would be inserted */
-    position(arr: string[], str: string, n: number): number {
-        if (n == 0) {
-            var h, m;
-            n = -1;
-            h = arr.length;
-            while (n + 1 < h) {
-                m = (n + h) >> 1;
-                if (arr[m] < str) n = m; else h = m;
-            }
-            return h;
-        } else
-            for (var i = n; i < arr.length && arr[i] < str; i++);
-        return i; // i=arr.length || arr[i]>=str
-    }
-
-    AMgetSymbol(str: string): AMSymbol {
-        //return maximal initial substring of str that appears in names
-        //return null if there is none
-        let ret: AMSymbol
-        var k = 0; //new pos
-        var j = 0; //old pos
-        var mk; //match pos
-        var st;
-        var tagst;
-        var match = "";
-        var more = true;
-        for (let i = 1; i <= str.length && more; i++) {
-            st = str.slice(0, i); //initial substring of length i
-            j = k;
-            k = this.position(this.AMnames, st, j);
-            if (k < this.AMnames.length && str.slice(0, this.AMnames[k].length) == this.AMnames[k]) {
-                match = this.AMnames[k];
-                mk = k;
-                i = match.length;
-            }
-            more = k < this.AMnames.length && str.slice(0, this.AMnames[k].length) >= this.AMnames[k];
-        }
-        this.AMpreviousSymbol = this.AMcurrentSymbol;
-        if (match != "") {
-            this.AMcurrentSymbol = this.AMsymbols[mk].ttype;
-            ret = this.AMsymbols[mk];
-        } else {
-            // if str[0] is a digit or - return maxsubstring of digits.digits
-            this.AMcurrentSymbol = CONST;
-            k = 1;
-            st = str.slice(0, 1);
-            var integ = true;
-            while ("0" <= st && st <= "9" && k <= str.length) {
-                st = str.slice(k, k + 1);
-                k++;
-            }
-            if (st == this.decimalsign) {
-                st = str.slice(k, k + 1);
-                if ("0" <= st && st <= "9") {
-                    integ = false;
-                    k++;
-                    while ("0" <= st && st <= "9" && k <= str.length) {
-                        st = str.slice(k, k + 1);
-                        k++;
-                    }
-                }
-            }
-            if ((integ && k > 1) || k > 2) {
-                st = str.slice(0, k - 1);
-                tagst = "mn";
-            } else {
-                k = 2;
-                st = str.slice(0, 1); //take 1 character
-                tagst = (("A" > st || st > "Z") && ("a" > st || st > "z") ? "mo" : "mi");
-            }
-            if (st == "-" && str.charAt(1) !== ' ' && this.AMpreviousSymbol == INFIX) {
-                this.AMcurrentSymbol = INFIX;  //trick "/" into recognizing "-" on second parse
-                ret = { input: st, tag: tagst, output: st, ttype: UNARY, func: true };
-
-            } else {
-                ret = { input: st, tag: tagst, output: st, ttype: CONST };
-            }
-        }
-        // if (debug) console.log(ret)
-        return ret
-    }
-    AMremoveBrackets(node) {
-        var st;
-        if (!node.hasChildNodes()) { return; }
-        if (node.firstChild.hasChildNodes() && (node.nodeName == "mrow" || node.nodeName == "M:MROW")) {
-            if (node.firstChild.nextSibling && node.firstChild.nextSibling.nodeName == "mtable") { return; }
-            st = node.firstChild.firstChild.nodeValue;
-            if (st == "(" || st == "[" || st == "{") node.removeChild(node.firstChild);
-        }
-        if (node.lastChild.hasChildNodes() && (node.nodeName == "mrow" || node.nodeName == "M:MROW")) {
-            st = node.lastChild.firstChild.nodeValue;
-            if (st == ")" || st == "]" || st == "}") node.removeChild(node.lastChild);
-        }
-    }
-
-    /*Parsing ASCII math expressions with the following grammar
-    v ::= [A-Za-z] | greek letters | numbers | other constant symbols
-    u ::= sqrt | text | bb | other unary symbols for font commands
-    b ::= frac | root | stackrel         binary symbols
-    l ::= ( | [ | { | (: | {:            left brackets
-    r ::= ) | ] | } | :) | :}            right brackets
-    S ::= v | lEr | uS | bSS             Simple expression
-    I ::= S_S | S^S | S_S^S | S          Intermediate expression
-    E ::= IE | I/I                       Expression
-    Each terminal symbol is translated into a corresponding mathml node.*/
-
-
-    /** Simple Expressions  x+1  (x+1)  sqrt(x+1)  frac(x+1)(x+2)  */
-    AMparseSexpr(str: string) { //parses str and returns [node,tailstr]
-        var symbol, node, result, i, st// rightvert = false,
-        let newFrag = document.createDocumentFragment();
-        str = this.AMremoveCharsAndBlanks(str, 0);
-        symbol = this.AMgetSymbol(str);             //either a token or a bracket or empty
-        if (symbol == null || symbol.ttype == RIGHTBRACKET && this.AMnestingDepth > 0) {
-            return [null, str];
-        }
-        if (symbol.ttype == DEFINITION) {
-            str = symbol.output + this.AMremoveCharsAndBlanks(str, symbol.input.length);
-            symbol = this.AMgetSymbol(str);
-        }
-        switch (symbol.ttype) {
-            case UNDEROVER:
-            case CONST:
-                str = this.AMremoveCharsAndBlanks(str, symbol.input.length);
-                return [this.createMmlNode(symbol.tag,        //its a constant
-                    document.createTextNode(symbol.output)), str];
-            case LEFTBRACKET:   //read (expr+)
-                this.AMnestingDepth++;
-                str = this.AMremoveCharsAndBlanks(str, symbol.input.length);
-                result = this.AMparseExpr(str, true);
-                this.AMnestingDepth--;
-                if (typeof symbol.invisible == "boolean" && symbol.invisible)
-                    node = this.createMmlNode("mrow", result[0]);
-                else {
-                    node = this.createMmlNode("mo", document.createTextNode(symbol.output));
-                    node = this.createMmlNode("mrow", node);
-                    node.appendChild(result[0]);
-                }
-                return [node, result[1]];
-            case TEXT:
-                if (symbol != this.AMquote) str = this.AMremoveCharsAndBlanks(str, symbol.input.length);
-                if (str.charAt(0) == "{") i = str.indexOf("}");
-                else if (str.charAt(0) == "(") i = str.indexOf(")");
-                else if (str.charAt(0) == "[") i = str.indexOf("]");
-                else if (symbol == this.AMquote) i = str.slice(1).indexOf("\"") + 1;
-                else i = 0;
-                if (i == -1) i = str.length;
-                st = str.slice(1, i);
-                if (st.charAt(0) == " ") {
-                    node = this.createMmlNode("mspace");
-                    node.setAttribute("width", "1ex");
-                    newFrag.appendChild(node);
-                }
-                newFrag.appendChild(
-                    this.createMmlNode(symbol.tag, document.createTextNode(st)));
-                if (st.charAt(st.length - 1) == " ") {
-                    node = this.createMmlNode("mspace");
-                    node.setAttribute("width", "1ex");
-                    newFrag.appendChild(node);
-                }
-                str = this.AMremoveCharsAndBlanks(str, i + 1);
-                return [this.createMmlNode("mrow", newFrag), str];
-            case UNARYUNDEROVER:
-            case UNARY:
-                str = this.AMremoveCharsAndBlanks(str, symbol.input.length);
-                result = this.AMparseSexpr(str);
-
-                if (result[0] == null) {
-                    if (symbol.tag == "mi" || symbol.tag == "mo") {
-                        return [this.createMmlNode(symbol.tag,
-                            document.createTextNode(symbol.output)), str];
-                    } else {
-                        result[0] = this.createMmlNode("mi", "");
-                    }
-                }
-                if (typeof symbol.func == "boolean" && symbol.func) { // functions hack
-                    st = str.charAt(0);
-                    if (st == "^" || st == "_" || st == "/" || st == "|" || st == "," ||
-                        (symbol.input.length == 1 && symbol.input.match(/\w/) && st != "(")) {
-                        return [this.createMmlNode(symbol.tag,
-                            document.createTextNode(symbol.output)), str];
-                    } else {
-                        node = this.createMmlNode("mrow",
-                            this.createMmlNode(symbol.tag, document.createTextNode(symbol.output)));
-                        node.appendChild(result[0]);
-                        return [node, result[1]];
-                    }
-                }
-                this.AMremoveBrackets(result[0]);
-                if (symbol.input == "sqrt") {           // sqrt
-                    return [this.createMmlNode(symbol.tag, result[0]), result[1]];
-                } else if (typeof symbol.rewriteleftright != "undefined") {    // abs, floor, ceil
-                    node = this.createMmlNode("mrow", this.createMmlNode("mo", document.createTextNode(symbol.rewriteleftright[0])));
-                    node.appendChild(result[0]);
-                    node.appendChild(this.createMmlNode("mo", document.createTextNode(symbol.rewriteleftright[1])));
-                    return [node, result[1]];
-                } else if (symbol.input == "cancel") {   // cancel
-                    node = this.createMmlNode(symbol.tag, result[0]);
-                    node.setAttribute("notation", "updiagonalstrike");
-                    return [node, result[1]];
-                } else if (typeof symbol.acc == "boolean" && symbol.acc) {   // accent
-                    node = this.createMmlNode(symbol.tag, result[0]);
-                    var accnode = this.createMmlNode("mo", document.createTextNode(symbol.output));
-                    if (symbol.input == "vec" && (
-                        (result[0].nodeName == "mrow" && result[0].childNodes.length == 1
-                            && result[0].firstChild.firstChild.nodeValue !== null
-                            && result[0].firstChild.firstChild.nodeValue.length == 1) ||
-                        (result[0].firstChild && result[0].firstChild.nodeValue !== null
-                            && result[0].firstChild.nodeValue.length == 1))) {
-                        accnode.setAttribute("stretchy", '');
-                    }
-                    node.appendChild(accnode);
-                    return [node, result[1]];
-                } else {                        // font change command
-                    if (typeof symbol.codes != "undefined") {
-                        for (i = 0; i < result[0].childNodes.length; i++)
-                            ['mrow', 'mi', 'mo', 'mtext'].map((tag) => {
-                                // if(result[0].nodeName === tag)
-                                //     result[0].textContent = this.substituteGlyphs(result[0].textContent, symbol.codes);
-                                if (result[0].childNodes[i].nodeName === tag)
-                                    result[0].childNodes[i].textContent = this.substituteGlyphs(result[0].childNodes[i].textContent, symbol.codes);
-                            })
-                    }
-
-                    node = this.createMmlNode(symbol.tag, result[0]);
-                    // node.setAttribute(symbol.atname, symbol.atval);
-                    return [node, result[1]];
-                }
-            case BINARY:
-                str = this.AMremoveCharsAndBlanks(str, symbol.input.length);
-                result = this.AMparseSexpr(str);
-                if (result[0] == null) return [this.createMmlNode("mo",
-                    document.createTextNode(symbol.input)), str];
-                this.AMremoveBrackets(result[0]);
-                var result2 = this.AMparseSexpr(result[1]);
-                if (result2[0] == null) return [this.createMmlNode("mo",
-                    document.createTextNode(symbol.input)), str];
-                this.AMremoveBrackets(result2[0]);
-                if (['color', 'class', 'id'].indexOf(symbol.input) >= 0) {
-
-                    // Get the second argument
-                    if (str.charAt(0) == "{") i = str.indexOf("}");
-                    else if (str.charAt(0) == "(") i = str.indexOf(")");
-                    else if (str.charAt(0) == "[") i = str.indexOf("]");
-                    st = str.slice(1, i);
-
-                    // Make a mathml node
-                    node = this.createMmlNode(symbol.tag, result2[0]);
-
-                    // Set the correct attribute
-                    if (symbol.input === "color") node.setAttribute("mathcolor", st)
-                    else if (symbol.input === "class") node.setAttribute("class", st)
-                    else if (symbol.input === "id") node.setAttribute("id", st)
-                    return [node, result2[1]];
-                }
-                if (symbol.input == "root" || symbol.output == "stackrel")
-                    newFrag.appendChild(result2[0]);
-                newFrag.appendChild(result[0]);
-                if (symbol.input == "frac") newFrag.appendChild(result2[0]);
-                return [this.createMmlNode(symbol.tag, newFrag), result2[1]];
-            case INFIX:
-                str = this.AMremoveCharsAndBlanks(str, symbol.input.length);
-                return [this.createMmlNode("mo", document.createTextNode(symbol.output)), str];
-            case SPACE:
-                str = this.AMremoveCharsAndBlanks(str, symbol.input.length);
-                node = this.createMmlNode("mspace");
-                node.setAttribute("width", "1ex");
-                newFrag.appendChild(node);
-                newFrag.appendChild(
-                    this.createMmlNode(symbol.tag, document.createTextNode(symbol.output)));
-                node = this.createMmlNode("mspace");
-                node.setAttribute("width", "1ex");
-                newFrag.appendChild(node);
-                return [this.createMmlNode("mrow", newFrag), str];
-
-            case LEFTRIGHT:   // | bar
-                //    if (rightvert) return [null,str]; else rightvert = true;
-                this.AMnestingDepth++;
-                str = this.AMremoveCharsAndBlanks(str, symbol.input.length);
-                result = this.AMparseExpr(str, false);
-                this.AMnestingDepth--;
-                st = "";
-                if (result[0].lastChild != null)
-                    st = result[0].lastChild.firstChild.nodeValue;
-                if (st == "|" && str.charAt(0) !== ",") { // its an absolute value subterm
-                    node = this.createMmlNode("mo", document.createTextNode(symbol.output));
-                    node = this.createMmlNode("mrow", node);
-                    node.appendChild(result[0]);
-                    return [node, result[1]];
-                } else { // the "|" is a \mid so use unicode 2223 (divides) for spacing
-                    node = this.createMmlNode("mo", document.createTextNode("\u2223"));
-                    node = this.createMmlNode("mrow", node);
-                    return [node, str];
-                }
-            default:
-                //alert("default");
-                str = this.AMremoveCharsAndBlanks(str, symbol.input.length);
-                return [this.createMmlNode(symbol.tag,        //its a constant
-                    document.createTextNode(symbol.output)), str];
-        }
-    }
-
-    AMparseIexpr(str) {
-        var symbol, sym1, sym2, node, result, underover;
-        str = this.AMremoveCharsAndBlanks(str, 0);
-        sym1 = this.AMgetSymbol(str);
-        result = this.AMparseSexpr(str);
-        node = result[0];
-        str = result[1];
-        symbol = this.AMgetSymbol(str);
-        if (symbol.ttype == INFIX && symbol.input != "/") {
-            str = this.AMremoveCharsAndBlanks(str, symbol.input.length);
-            //    if (symbol.input == "/") result = AMparseIexpr(str); else ...
-            result = this.AMparseSexpr(str);
-            if (result[0] == null) // show box in place of missing argument
-                result[0] = this.createMmlNode("mo", document.createTextNode("\u25A1"));
-            else this.AMremoveBrackets(result[0]);
-            str = result[1];
-            //    if (symbol.input == "/") AMremoveBrackets(node);
-            underover = (sym1.ttype == UNDEROVER || sym1.ttype == UNARYUNDEROVER);
-            if (symbol.input == "_") {
-                sym2 = this.AMgetSymbol(str);
-                if (sym2.input == "^") {
-                    str = this.AMremoveCharsAndBlanks(str, sym2.input.length);
-                    var res2 = this.AMparseSexpr(str);
-                    this.AMremoveBrackets(res2[0]);
-                    str = res2[1];
-                    node = this.createMmlNode((underover ? "munderover" : "msubsup"), node);
-                    node.appendChild(result[0]);
-                    node.appendChild(res2[0]);
-                    node = this.createMmlNode("mrow", node); // so sum does not stretch
-                } else {
-                    node = this.createMmlNode((underover ? "munder" : "msub"), node);
-                    node.appendChild(result[0]);
-                }
-            } else if (symbol.input == "^" && underover) {
-                node = this.createMmlNode("mover", node);
-                node.appendChild(result[0]);
-            } else {
-                node = this.createMmlNode(symbol.tag, node);
-                node.appendChild(result[0]);
-            }
-            if (typeof sym1.func != 'undefined' && sym1.func) {
-                sym2 = this.AMgetSymbol(str);
-                if (sym2.ttype != INFIX && sym2.ttype != RIGHTBRACKET &&
-                    (sym1.input.length > 1 || sym2.ttype == LEFTBRACKET)) {
-                    result = this.AMparseIexpr(str);
-                    node = this.createMmlNode("mrow", node);
-                    node.appendChild(result[0]);
-                    str = result[1];
-                }
-            }
-        }
-        return [node, str];
-    }
-
-    AMparseExpr(str, rightbracket) {
-        var symbol, node, result, i
-
-        let newFrag = document.createDocumentFragment();
-        do {
-            str = this.AMremoveCharsAndBlanks(str, 0);
-            result = this.AMparseIexpr(str);
-            node = result[0];
-            str = result[1];
-            symbol = this.AMgetSymbol(str);
-            if (symbol.ttype == INFIX && symbol.input == "/") {
-                str = this.AMremoveCharsAndBlanks(str, symbol.input.length);
-                result = this.AMparseIexpr(str);
-                if (result[0] == null) // show box in place of missing argument
-                    result[0] = this.createMmlNode("mo", document.createTextNode("\u25A1"));
-                else this.AMremoveBrackets(result[0]);
-                str = result[1];
-                this.AMremoveBrackets(node);
-                node = this.createMmlNode(symbol.tag, node);
-                node.appendChild(result[0]);
-                newFrag.appendChild(node);
-                symbol = this.AMgetSymbol(str);
-            }
-            else if (node != undefined) newFrag.appendChild(node);
-        } while ((symbol.ttype != RIGHTBRACKET &&
-            (symbol.ttype != LEFTRIGHT || rightbracket)
-            || this.AMnestingDepth == 0) && symbol != null && symbol.output != "");
-        if (symbol.ttype == RIGHTBRACKET || symbol.ttype == LEFTRIGHT) {
-            //    if (this.AMnestingDepth > 0) this.AMnestingDepth--;
-            var len = newFrag.childNodes.length;
-            if (len > 0 && newFrag.childNodes[len - 1].nodeName == "mrow"
-                && newFrag.childNodes[len - 1].lastChild
-                && newFrag.childNodes[len - 1].lastChild.firstChild) { //matrix
-                //removed to allow row vectors: //&& len>1 &&
-                //newFrag.childNodes[len-2].nodeName == "mo" &&
-                //newFrag.childNodes[len-2].firstChild.nodeValue == ","
-                var right = newFrag.childNodes[len - 1].lastChild.firstChild.nodeValue;
-                if (right == ")" || right == "]") {
-                    var left = newFrag.childNodes[len - 1].firstChild.firstChild.nodeValue;
-                    if (left == "(" && right == ")" && symbol.output != "}" ||
-                        left == "[" && right == "]") {
-                        var pos = []; // positions of commas
-                        var matrix = true;
-                        var m = newFrag.childNodes.length;
-                        for (i = 0; matrix && i < m; i = i + 2) {
-                            pos[i] = [];
-                            node = newFrag.childNodes[i];
-                            if (matrix) matrix = node.nodeName == "mrow" &&
-                                (i == m - 1 || node.nextSibling.nodeName == "mo" &&
-                                    node.nextSibling.firstChild.nodeValue == ",") &&
-                                node.firstChild.firstChild &&
-                                node.firstChild.firstChild.nodeValue == left &&
-                                node.lastChild.firstChild &&
-                                node.lastChild.firstChild.nodeValue == right;
-                            if (matrix)
-                                for (var j = 0; j < node.childNodes.length; j++)
-                                    if (node.childNodes[j].firstChild.nodeValue == ",")
-                                        pos[i][pos[i].length] = j;
-                            if (matrix && i > 1) matrix = pos[i].length == pos[i - 2].length;
-                        }
-                        matrix = matrix && (pos.length > 1 || pos[0].length > 0);
-                        var columnlines = [];
-                        if (matrix) {
-                            var row, frag, n, k, table = document.createDocumentFragment();
-                            for (i = 0; i < m; i = i + 2) {
-                                row = document.createDocumentFragment();
-                                frag = document.createDocumentFragment();
-                                node = newFrag.firstChild; // <mrow>(-,-,...,-,-)</mrow>
-                                n = node.childNodes.length;
-                                k = 0;
-                                node.removeChild(node.firstChild); //remove (
-                                for (j = 1; j < n - 1; j++) {
-                                    if (typeof pos[i][k] != "undefined" && j == pos[i][k]) {
-                                        node.removeChild(node.firstChild); //remove ,
-                                        if (node.firstChild.nodeName == "mrow" && node.firstChild.childNodes.length == 1 &&
-                                            node.firstChild.firstChild.firstChild.nodeValue == "\u2223") {
-                                            //is columnline marker - skip it
-                                            if (i == 0) { columnlines.push("solid"); }
-                                            node.removeChild(node.firstChild); //remove mrow
-                                            node.removeChild(node.firstChild); //remove ,
-                                            j += 2;
-                                            k++;
-                                        } else if (i == 0) { columnlines.push("none"); }
-                                        row.appendChild(this.createMmlNode("mtd", frag));
-                                        k++;
-                                    } else frag.appendChild(node.firstChild);
-                                }
-                                row.appendChild(this.createMmlNode("mtd", frag));
-                                if (i == 0) { columnlines.push("none"); }
-                                if (newFrag.childNodes.length > 2) {
-                                    newFrag.removeChild(newFrag.firstChild); //remove <mrow>)</mrow>
-                                    newFrag.removeChild(newFrag.firstChild); //remove <mo>,</mo>
-                                }
-                                table.appendChild(this.createMmlNode("mtr", row));
-                            }
-                            node = this.createMmlNode("mtable", table);
-                            node.setAttribute("columnlines", columnlines.join(" "));
-                            if (typeof symbol.invisible == "boolean" && symbol.invisible) node.setAttribute("columnalign", "left");
-                            newFrag.replaceChild(node, newFrag.firstChild);
-                        }
-                    }
-                }
-            }
-            str = this.AMremoveCharsAndBlanks(str, symbol.input.length);
-            if (typeof symbol.invisible != "boolean" || !symbol.invisible) {
-                node = this.createMmlNode("mo", document.createTextNode(symbol.output));
-                newFrag.appendChild(node);
-            }
-        }
-        return [newFrag, str];
-    }
-
-
-
-
-    parseMath(str, latex = false) {
-        // if (debug) console.groupCollapsed(`% c${str} `, 'background-color:blue')
-
-        var frag, node;
-        this.AMnestingDepth = 0;
-        //some basic cleanup for dealing with stuff editors like TinyMCE adds
-        str = str.replace(/&nbsp;/g, "");
-        str = str.replace(/&gt;/g, ">");
-        str = str.replace(/&lt;/g, "<");
-        frag = this.AMparseExpr(str.replace(/^\s+/g, ""), false)[0];
-        node = this.createMmlNode("mstyle", frag);
-        if (this.mathcolor != "") node.setAttribute("mathcolor", this.mathcolor);
-        if (this.mathfontsize != "") {
-            node.setAttribute("fontsize", this.mathfontsize);
-            node.setAttribute("mathsize", this.mathfontsize);
-        }
-        // if (this.mathfontfamily != "") {
-        node.setAttribute("fontfamily", this.mathfontfamily);
-        // node.setAttribute("mathvariant", this.mathfontfamily);
-        // }
-
-        if (this.displaystyle) node.setAttribute("displaystyle", "true");
-        node = this.createMmlNode("math", node);
-        node.setAttribute("title", str.replace(/\s+/g, " "));//does not show in Gecko
-
-        // if (debug) console.groupEnd()
-
-        return node;
-    }
-
-    strarr2docFrag(arr, linebreaks, latex) {
-        var newFrag = document.createDocumentFragment();
-        var expr = false;
-        for (var i = 0; i < arr.length; i++) {
-            if (expr) newFrag.appendChild(this.parseMath(arr[i], latex));
-            else {
-                var arri = (linebreaks ? arr[i].split("\n\n") : [arr[i]]);
-                newFrag.appendChild(this.createElementXHTML("span").
-                    appendChild(document.createTextNode(arri[0])));
-                for (var j = 1; j < arri.length; j++) {
-                    newFrag.appendChild(this.createElementXHTML("p"));
-                    newFrag.appendChild(this.createElementXHTML("span").
-                        appendChild(document.createTextNode(arri[j])));
-                }
-            }
-            expr = !expr;
-        }
-        return newFrag;
-    }
-
-    AMautomathrec(str) {
-        //formula is a space (or start of str) followed by a maximal sequence of *two* or more tokens, possibly separated by runs of digits and/or space.
-        //tokens are single letters (except a, A, I) and ASCIIMathML tokens
-        var texcommand = "\\\\[a-zA-Z]+|\\\\\\s|";
-        var ambigAMtoken = "\\b(?:oo|lim|ln|int|oint|del|grad|aleph|prod|prop|sinh|cosh|tanh|cos|sec|pi|tt|fr|sf|sube|supe|sub|sup|det|mod|gcd|lcm|min|max|vec|ddot|ul|chi|eta|nu|mu)(?![a-z])|";
-        var englishAMtoken = "\\b(?:sum|ox|log|sin|tan|dim|hat|bar|dot)(?![a-z])|";
-        var secondenglishAMtoken = "|\\bI\\b|\\bin\\b|\\btext\\b"; // took if and or not out
-        var simpleAMtoken = "NN|ZZ|QQ|RR|CC|TT|AA|EE|sqrt|dx|dy|dz|dt|xx|vv|uu|nn|bb|cc|csc|cot|alpha|beta|delta|Delta|epsilon|gamma|Gamma|kappa|lambda|Lambda|omega|phi|Phi|Pi|psi|Psi|rho|sigma|Sigma|tau|theta|Theta|xi|Xi|zeta"; // uuu nnn?
-        var letter = "[a-zA-HJ-Z](?=(?:[^a-zA-Z]|$|" + ambigAMtoken + englishAMtoken + simpleAMtoken + "))|";
-        var token = letter + texcommand + "\\d+|[-()[\\]{}+=*&^_%\\\@/<>,\\|!:;'~]|\\.(?!(?:\x20|$))|" + ambigAMtoken + englishAMtoken + simpleAMtoken;
-        var re = new RegExp("(^|\\s)(((" + token + ")\\s?)((" + token + secondenglishAMtoken + ")\\s?)+)([,.?]?(?=\\s|$))", "g");
-        str = str.replace(re, " `$2`$7");
-        var arr = str.split(this.AMdelimiter1);
-        var re1 = new RegExp("(^|\\s)([b-zB-HJ-Z+*<>]|" + texcommand + ambigAMtoken + simpleAMtoken + ")(\\s|\\n|$)", "g");
-        var re2 = new RegExp("(^|\\s)([a-z]|" + texcommand + ambigAMtoken + simpleAMtoken + ")([,.])", "g"); // removed |\d+ for now
-        var i;
-        for (i = 0; i < arr.length; i++)   //single nonenglish tokens
-            if (i % 2 == 0) {
-                arr[i] = arr[i].replace(re1, " `$2`$3");
-                arr[i] = arr[i].replace(re2, " `$2`$3");
-                arr[i] = arr[i].replace(/([{}[\]])/, "`$1`");
-            }
-        str = arr.join(this.AMdelimiter1);
-        str = str.replace(/((^|\s)\([a-zA-Z]{2,}.*?)\)`/g, "$1`)");  //fix parentheses
-        str = str.replace(/`(\((a\s|in\s))(.*?[a-zA-Z]{2,}\))/g, "$1`$3");  //fix parentheses
-        str = str.replace(/\sin`/g, "` in");
-        str = str.replace(/`(\(\w\)[,.]?(\s|\n|$))/g, "$1`");
-        str = str.replace(/`([0-9.]+|e.g|i.e)`(\.?)/gi, "$1$2");
-        str = str.replace(/`([0-9.]+:)`/g, "$1");
-        return str;
-    }
-
-    processNodeR(n, linebreaks, latex) {
-        var mtch, str, arr, frg, i;
-        if (n.childNodes.length == 0) {
-            if ((n.nodeType != 8 || linebreaks) &&
-                n.parentNode.nodeName != "form" && n.parentNode.nodeName != "FORM" &&
-                n.parentNode.nodeName != "textarea" && n.parentNode.nodeName != "TEXTAREA" /*&&
-    n.parentNode.nodeName!="pre" && n.parentNode.nodeName!="PRE"*/) {
-                str = n.nodeValue;
-                if (!(str == null)) {
-                    str = str.replace(/\r\n\r\n/g, "\n\n");
-                    str = str.replace(/\x20+/g, " ");
-                    str = str.replace(/\s*\r\n/g, " ");
-                    if (latex) {
-                        // DELIMITERS:
-                        mtch = (str.indexOf("\$") == -1 ? false : true);
-                        str = str.replace(/([^\\])\$/g, "$1 \$");
-                        str = str.replace(/^\$/, " \$");	// in case \$ at start of string
-                        arr = str.split(" \$");
-                        for (i = 0; i < arr.length; i++)
-                            arr[i] = arr[i].replace(/\\\$/g, "\$");
-                    } else {
-                        mtch = false;
-                        str = str.replace(new RegExp(this.AMescape1, "g"),
-                            function () { mtch = true; return "AMescape1" });
-                        str = str.replace(/\\?end{?a?math}?/i,
-                            function () { this.automathrecognize = false; mtch = true; return "" });
-                        str = str.replace(/amath\b|\\begin{a?math}/i,
-                            function () { this.automathrecognize = true; mtch = true; return "" });
-                        arr = str.split(this.AMdelimiter1);
-                        if (this.automathrecognize)
-                            for (i = 0; i < arr.length; i++)
-                                if (i % 2 == 0) arr[i] = this.AMautomathrec(arr[i]);
-                        str = arr.join(this.AMdelimiter1);
-                        arr = str.split(this.AMdelimiter1);
-                        for (i = 0; i < arr.length; i++) // this is a problem ************
-                            arr[i] = arr[i].replace(/AMescape1/g, this.AMdelimiter1);
-                    }
-                    if (arr.length > 1 || mtch) {
-                        if (!this.noMathML) {
-                            frg = this.strarr2docFrag(arr, n.nodeType == 8, latex);
-                            var len = frg.childNodes.length;
-                            n.parentNode.replaceChild(frg, n);
-                            return len - 1;
-                        } else return 0;
-                    }
-                }
-            } else return 0;
-        } else if (n.nodeName != "math") {
-            for (i = 0; i < n.childNodes.length; i++)
-                i += this.processNodeR(n.childNodes[i], linebreaks, latex);
-        }
-        return 0;
-    }
-
-    AMprocessNode(n, linebreaks, spanclassAM) {
-        var frag, st;
-        if (spanclassAM != null) {
-            frag = document.getElementsByTagName("span")
-            for (var i = 0; i < frag.length; i++)
-                if (frag[i].className == "AM")
-                    this.processNodeR(frag[i], linebreaks, false);
-        } else {
-            try {
-                st = n.innerHTML; // look for AMdelimiter on page
-            } catch (err) { }
-            //alert(st)
-            if (st == null || /amath\b|\\begin{a?math}/i.test(st) ||
-                st.indexOf(this.AMdelimiter1 + " ") != -1 || st.slice(-1) == this.AMdelimiter1 ||
-                st.indexOf(this.AMdelimiter1 + "<") != -1 || st.indexOf(this.AMdelimiter1 + "\n") != -1) {
-                this.processNodeR(n, linebreaks, false);
-            }
-        }
-    }
-
-
-    substituteGlyphs(str: string, font: string, tag: "mo" | "mi" | "mn" = 'mi'): string {
-        if (str == null) return '';
-
-        // font table from https://github.com/beizhedenglong/weird-fonts
-        // serif.normal is usual ascii.  others are Mathematical Block unicode from https://www.compart.com/en/unicode/block/U+1D400
-        const fonts = {
-            "serif.normal": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
-            "serif.bold": ["𝐀", "𝐁", "𝐂", "𝐃", "𝐄", "𝐅", "𝐆", "𝐇", "𝐈", "𝐉", "𝐊", "𝐋", "𝐌", "𝐍", "𝐎", "𝐏", "𝐐", "𝐑", "𝐒", "𝐓", "𝐔", "𝐕", "𝐖", "𝐗", "𝐘", "𝐙", "𝐚", "𝐛", "𝐜", "𝐝", "𝐞", "𝐟", "𝐠", "𝐡", "𝐢", "𝐣", "𝐤", "𝐥", "𝐦", "𝐧", "𝐨", "𝐩", "𝐪", "𝐫", "𝐬", "𝐭", "𝐮", "𝐯", "𝐰", "𝐱", "𝐲", "𝐳", "𝟎", "𝟏", "𝟐", "𝟑", "𝟒", "𝟓", "𝟔", "𝟕", "𝟖", "𝟗"],
-            "serif.italic": ["𝐴", "𝐵", "𝐶", "𝐷", "𝐸", "𝐹", "𝐺", "𝐻", "𝐼", "𝐽", "𝐾", "𝐿", "𝑀", "𝑁", "𝑂", "𝑃", "𝑄", "𝑅", "𝑆", "𝑇", "𝑈", "𝑉", "𝑊", "𝑋", "𝑌", "𝑍", "𝑎", "𝑏", "𝑐", "𝑑", "𝑒", "𝑓", "𝑔", "ℎ", "𝑖", "𝑗", "𝑘", "𝑙", "𝑚", "𝑛", "𝑜", "𝑝", "𝑞", "𝑟", "𝑠", "𝑡", "𝑢", "𝑣", "𝑤", "𝑥", "𝑦", "𝑧"],
-            "serif.bold-italic": ["𝑨", "𝑩", "𝑪", "𝑫", "𝑬", "𝑭", "𝑮", "𝑯", "𝑰", "𝑱", "𝑲", "𝑳", "𝑴", "𝑵", "𝑶", "𝑷", "𝑸", "𝑹", "𝑺", "𝑻", "𝑼", "𝑽", "𝑾", "𝑿", "𝒀", "𝒁", "𝒂", "𝒃", "𝒄", "𝒅", "𝒆", "𝒇", "𝒈", "𝒉", "𝒊", "𝒋", "𝒌", "𝒍", "𝒎", "𝒏", "𝒐", "𝒑", "𝒒", "𝒓", "𝒔", "𝒕", "𝒖", "𝒗", "𝒘", "𝒙", "𝒚", "𝒛"],
-            "sans-serif.normal": ["𝖠", "𝖡", "𝖢", "𝖣", "𝖤", "𝖥", "𝖦", "𝖧", "𝖨", "𝖩", "𝖪", "𝖫", "𝖬", "𝖭", "𝖮", "𝖯", "𝖰", "𝖱", "𝖲", "𝖳", "𝖴", "𝖵", "𝖶", "𝖷", "𝖸", "𝖹", "𝖺", "𝖻", "𝖼", "𝖽", "𝖾", "𝖿", "𝗀", "𝗁", "𝗂", "𝗃", "𝗄", "𝗅", "𝗆", "𝗇", "𝗈", "𝗉", "𝗊", "𝗋", "𝗌", "𝗍", "𝗎", "𝗏", "𝗐", "𝗑", "𝗒", "𝗓", "𝟢", "𝟣", "𝟤", "𝟥", "𝟦", "𝟧", "𝟨", "𝟩", "𝟪", "𝟫"],
-            "sans-serif.bold": ["𝗔", "𝗕", "𝗖", "𝗗", "𝗘", "𝗙", "𝗚", "𝗛", "𝗜", "𝗝", "𝗞", "𝗟", "𝗠", "𝗡", "𝗢", "𝗣", "𝗤", "𝗥", "𝗦", "𝗧", "𝗨", "𝗩", "𝗪", "𝗫", "𝗬", "𝗭", "𝗮", "𝗯", "𝗰", "𝗱", "𝗲", "𝗳", "𝗴", "𝗵", "𝗶", "𝗷", "𝗸", "𝗹", "𝗺", "𝗻", "𝗼", "𝗽", "𝗾", "𝗿", "𝘀", "𝘁", "𝘂", "𝘃", "𝘄", "𝘅", "𝘆", "𝘇", "𝟬", "𝟭", "𝟮", "𝟯", "𝟰", "𝟱", "𝟲", "𝟳", "𝟴", "𝟵"],
-            "sans-serif.italic": ["𝘈", "𝘉", "𝘊", "𝘋", "𝘌", "𝘍", "𝘎", "𝘏", "𝘐", "𝘑", "𝘒", "𝘓", "𝘔", "𝘕", "𝘖", "𝘗", "𝘘", "𝘙", "𝘚", "𝘛", "𝘜", "𝘝", "𝘞", "𝘟", "𝘠", "𝘡", "𝘢", "𝘣", "𝘤", "𝘥", "𝘦", "𝘧", "𝘨", "𝘩", "𝘪", "𝘫", "𝘬", "𝘭", "𝘮", "𝘯", "𝘰", "𝘱", "𝘲", "𝘳", "𝘴", "𝘵", "𝘶", "𝘷", "𝘸", "𝘹", "𝘺", "𝘻"],
-            "sans-serif.bold-italic": ["𝘼", "𝘽", "𝘾", "𝘿", "𝙀", "𝙁", "𝙂", "𝙃", "𝙄", "𝙅", "𝙆", "𝙇", "𝙈", "𝙉", "𝙊", "𝙋", "𝙌", "𝙍", "𝙎", "𝙏", "𝙐", "𝙑", "𝙒", "𝙓", "𝙔", "𝙕", "𝙖", "𝙗", "𝙘", "𝙙", "𝙚", "𝙛", "𝙜", "𝙝", "𝙞", "𝙟", "𝙠", "𝙡", "𝙢", "𝙣", "𝙤", "𝙥", "𝙦", "𝙧", "𝙨", "𝙩", "𝙪", "𝙫", "𝙬", "𝙭", "𝙮", "𝙯"],
-            "script.normal": ["𝒜", "ℬ", "𝒞", "𝒟", "ℰ", "ℱ", "𝒢", "ℋ", "ℐ", "𝒥", "𝒦", "ℒ", "ℳ", "𝒩", "𝒪", "𝒫", "𝒬", "ℛ", "𝒮", "𝒯", "𝒰", "𝒱", "𝒲", "𝒳", "𝒴", "𝒵", "𝒶", "𝒷", "𝒸", "𝒹", "ℯ", "𝒻", "ℊ", "𝒽", "𝒾", "𝒿", "𝓀", "𝓁", "𝓂", "𝓃", "ℴ", "𝓅", "𝓆", "𝓇", "𝓈", "𝓉", "𝓊", "𝓋", "𝓌", "𝓍", "𝓎", "𝓏"],
-            "script.bold": ["𝓐", "𝓑", "𝓒", "𝓓", "𝓔", "𝓕", "𝓖", "𝓗", "𝓘", "𝓙", "𝓚", "𝓛", "𝓜", "𝓝", "𝓞", "𝓟", "𝓠", "𝓡", "𝓢", "𝓣", "𝓤", "𝓥", "𝓦", "𝓧", "𝓨", "𝓩", "𝓪", "𝓫", "𝓬", "𝓭", "𝓮", "𝓯", "𝓰", "𝓱", "𝓲", "𝓳", "𝓴", "𝓵", "𝓶", "𝓷", "𝓸", "𝓹", "𝓺", "𝓻", "𝓼", "𝓽", "𝓾", "𝓿", "𝔀", "𝔁", "𝔂", "𝔃"],
-            "fraktur.normal": ["𝔄", "𝔅", "ℭ", "𝔇", "𝔈", "𝔉", "𝔊", "ℌ", "ℑ", "𝔍", "𝔎", "𝔏", "𝔐", "𝔑", "𝔒", "𝔓", "𝔔", "ℜ", "𝔖", "𝔗", "𝔘", "𝔙", "𝔚", "𝔛", "𝔜", "ℨ", "𝔞", "𝔟", "𝔠", "𝔡", "𝔢", "𝔣", "𝔤", "𝔥", "𝔦", "𝔧", "𝔨", "𝔩", "𝔪", "𝔫", "𝔬", "𝔭", "𝔮", "𝔯", "𝔰", "𝔱", "𝔲", "𝔳", "𝔴", "𝔵", "𝔶", "𝔷"],
-            "fraktur.bold": ["𝕬", "𝕭", "𝕮", "𝕯", "𝕰", "𝕱", "𝕲", "𝕳", "𝕴", "𝕵", "𝕶", "𝕷", "𝕸", "𝕹", "𝕺", "𝕻", "𝕼", "𝕽", "𝕾", "𝕿", "𝖀", "𝖁", "𝖂", "𝖃", "𝖄", "𝖅", "𝖆", "𝖇", "𝖈", "𝖉", "𝖊", "𝖋", "𝖌", "𝖍", "𝖎", "𝖏", "𝖐", "𝖑", "𝖒", "𝖓", "𝖔", "𝖕", "𝖖", "𝖗", "𝖘", "𝖙", "𝖚", "𝖛", "𝖜", "𝖝", "𝖞", "𝖟"],
-            "mono-space.normal": ["𝙰", "𝙱", "𝙲", "𝙳", "𝙴", "𝙵", "𝙶", "𝙷", "𝙸", "𝙹", "𝙺", "𝙻", "𝙼", "𝙽", "𝙾", "𝙿", "𝚀", "𝚁", "𝚂", "𝚃", "𝚄", "𝚅", "𝚆", "𝚇", "𝚈", "𝚉", "𝚊", "𝚋", "𝚌", "𝚍", "𝚎", "𝚏", "𝚐", "𝚑", "𝚒", "𝚓", "𝚔", "𝚕", "𝚖", "𝚗", "𝚘", "𝚙", "𝚚", "𝚛", "𝚜", "𝚝", "𝚞", "𝚟", "𝚠", "𝚡", "𝚢", "𝚣", "𝟶", "𝟷", "𝟸", "𝟹", "𝟺", "𝟻", "𝟼", "𝟽", "𝟾", "𝟿"],
-            "double-struck.bold": ["𝔸", "𝔹", "ℂ", "𝔻", "𝔼", "𝔽", "𝔾", "ℍ", "𝕀", "𝕁", "𝕂", "𝕃", "𝕄", "ℕ", "𝕆", "ℙ", "ℚ", "ℝ", "𝕊", "𝕋", "𝕌", "𝕍", "𝕎", "𝕏", "𝕐", "ℤ", "𝕒", "𝕓", "𝕔", "𝕕", "𝕖", "𝕗", "𝕘", "𝕙", "𝕚", "𝕛", "𝕜", "𝕝", "𝕞", "𝕟", "𝕠", "𝕡", "𝕢", "𝕣", "𝕤", "𝕥", "𝕦", "𝕧", "𝕨", "𝕩", "𝕪", "𝕫", "𝟘", "𝟙", "𝟚", "𝟛", "𝟜", "𝟝", "𝟞", "𝟟", "𝟠", "𝟡"],
-            "circle": ["Ⓐ", "Ⓑ", "Ⓒ", "Ⓓ", "Ⓔ", "Ⓕ", "Ⓖ", "Ⓗ", "Ⓘ", "Ⓙ", "Ⓚ", "Ⓛ", "Ⓜ", "Ⓝ", "Ⓞ", "Ⓟ", "Ⓠ", "Ⓡ", "Ⓢ", "Ⓣ", "Ⓤ", "Ⓥ", "Ⓦ", "Ⓧ", "Ⓨ", "Ⓩ", "ⓐ", "ⓑ", "ⓒ", "ⓓ", "ⓔ", "ⓕ", "ⓖ", "ⓗ", "ⓘ", "ⓙ", "ⓚ", "ⓛ", "ⓜ", "ⓝ", "ⓞ", "ⓟ", "ⓠ", "ⓡ", "ⓢ", "ⓣ", "ⓤ", "ⓥ", "ⓦ", "ⓧ", "ⓨ", "ⓩ", "⓪", "①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨"],
-            "square": ['🄰', '🄱', '🄲', '🄳', '🄴', '🄵', '🄶', '🄷', '🄸', '🄹', '🄺', '🄻', '🄼', '🄽', '🄾', '🄿', '🅀', '🅁', '🅂', '🅃', '🅄', '🅅', '🅆', '🅇', '🅈', '🅉', '🄰', '🄱', '🄲', '🄳', '🄴', '🄵', '🄶', '🄷', '🄸', '🄹', '🄺', '🄻', '🄼', '🄽', '🄾', '🄿', '🅀', '🅁', '🅂', '🅃', '🅄', '🅅', '🅆', '🅇', '🅈', '🅉'],
-        }
-
-        let glyphFont = ''
-        let result = ''
-        switch (font) {
-            case 'bold': glyphFont = 'serif.bold'; break;
-            case 'double-struck': glyphFont = 'double-struck.bold'; break;
-            case 'script': glyphFont = 'script.normal'; break;
-            case 'monospace': glyphFont = 'mono-space.normal'; break;
-            case 'fraktur': glyphFont = 'fraktur.normal'; break;
-            case 'sans-serif': glyphFont = 'sans-serif.normal'; break;
-            default: return str; // no converstion required
-        }
-
-        let glyphString = ''
-        Array.from(str).forEach(char => {
-            let glyphIndex = fonts["serif.normal"].indexOf(char);  // index of chars we can substitute
-            glyphString += (glyphIndex >= 0 && fonts[glyphFont].length > glyphIndex) ? fonts[glyphFont][glyphIndex] : char// substitute if index found
-        });
-
-        return glyphString
-    }
-
-
-
-    /** Simple Expressions  x+1  (x+1)  sqrt(x+1)  frac(x+1)(x+2)   - parses str and returns [node,tailstr]*/
-    TSparseSexpr(lex: [string, number][], index: number, calledFrom: recurseType = '', extraStyle: string = ''): [string, number] {
-
-        if (lex[index][1] === -1) {         // literal
-            if (this.containsOnlyNumbers(lex[index][0])) {
-                return [this.TSmml('mn', lex[index][0]), index + 1]
-            } else {
-                return [this.TSmml('mi', lex[index][0]), index + 1]
-            }
-        }
-
-        if (lex[index][1] === -2) {         // quoted string
-            return [this.TSmml('mtext', lex[index][0]), index + 1]
-        }
-
-        let symb = this.TSgetSymbol(lex, index);
-
-        if (symb == null || symb.ttype == RIGHTBRACKET && this.AMnestingDepth > 0) {
-            return ['', index];
-        }
-        // if (symb.ttype == DEFINITION) {
-        //     str = symb.output + this.AMremoveCharsAndBlanks(str, symb.input.length);
-        //     symb = this.AMgetSymbol(str);
-        // }
-
-        switch (symb.ttype) {
-
-            case UNDEROVER:
-            case CONST:
-                return [this.TSmml(symb.tag, symb.output), index + 1];
-            /*
-            case LEFTBRACKET:   //read (expr+)
-                this.AMnestingDepth++;
-                str = this.AMremoveCharsAndBlanks(str, symb.input.length);
-                result = this.AMparseExpr(str, true);
-                this.AMnestingDepth--;
-                if (typeof symb.invisible == "boolean" && symb.invisible)
-                    node = this.createMmlNode("mrow", result[0]);
-                else {
-                    node = this.createMmlNode("mo", document.createTextNode(symb.output));
-                    node = this.createMmlNode("mrow", node);
-                    node.appendChild(result[0]);
-                }
-                return [node, result[1]];
-            case TEXT:
-                if (symb != this.AMquote) str = this.AMremoveCharsAndBlanks(str, symb.input.length);
-                if (str.charAt(0) == "{") i = str.indexOf("}");
-                else if (str.charAt(0) == "(") i = str.indexOf(")");
-                else if (str.charAt(0) == "[") i = str.indexOf("]");
-                else if (symb == this.AMquote) i = str.slice(1).indexOf("\"") + 1;
-                else i = 0;
-                if (i == -1) i = str.length;
-                st = str.slice(1, i);
-                if (st.charAt(0) == " ") {
-                    node = this.createMmlNode("mspace");
-                    node.setAttribute("width", "1ex");
-                    newFrag.appendChild(node);
-                }
-                newFrag.appendChild(
-                    this.createMmlNode(symb.tag, document.createTextNode(st)));
-                if (st.charAt(st.length - 1) == " ") {
-                    node = this.createMmlNode("mspace");
-                    node.setAttribute("width", "1ex");
-                    newFrag.appendChild(node);
-                }
-                str = this.AMremoveCharsAndBlanks(str, i + 1);
-                return [this.createMmlNode("mrow", newFrag), str];
-             */
-            case UNARYUNDEROVER:
-            case UNARY:
-                let result = this.TSparseSexpr(lex, index + 1);
-
-                if (result[0] == '') {
-                    if (symb.tag == "mi" || symb.tag == "mo") {
-                        return [this.TSmml(symb.tag, symb.output), index + 1];
-                    } else {
-                        result[0] = this.TSmml("mi", "");
-                    }
-                }
-                if (typeof symb.func == "boolean" && symb.func) { // functions
-                    let output = `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`  // eg: tan
-                    let func = this.TSparseSexpr(lex, index + 1, 'func', extraStyle)    // argument for tan
-                    return [output + func[0], func[1]]
-
-
-                    // if (st == "^" || st == "_" || st == "/" || st == "|" || st == "," ||
-                    //     (symb.input.length == 1 && symb.input.match(/\w/) && st != "(")) {
-                    //     return [this.createMmlNode(symb.tag,
-                    //         document.createTextNode(symb.output)), str];
-                    // } else {
-
-                    // }
-                }
-
-                if (typeof symb.acc == "boolean" && symb.acc) { // accents
-
-                    let mover = `<${symb.tag} ${extraStyle}>`  // mover or munder
-                    mover += '<mrow>'
-                    let func = this.TSparseSexpr(lex, index + 1, 'func', extraStyle)    // argument that hat covers
-                    mover += func[0]
-                    // mover +=  `<mo ${extraStyle}>` + symb.output + `</mo>`  // the hat
-                    mover += '</mrow>'
-                    mover += this.TSmml('mo', symb.output)
-                    mover += `</${symb.tag}>`  // mover or munder
-
-                    return [mover, func[1]]
-                }
-
-
-
-
-            /*
-            this.AMremoveBrackets(result[0]);
-            if (symb.input == "sqrt") {           // sqrt
-                return [this.createMmlNode(symb.tag, result[0]), result[1]];
-            } else if (typeof symb.rewriteleftright != "undefined") {    // abs, floor, ceil
-                node = this.createMmlNode("mrow", this.createMmlNode("mo", document.createTextNode(symb.rewriteleftright[0])));
-                node.appendChild(result[0]);
-                node.appendChild(this.createMmlNode("mo", document.createTextNode(symb.rewriteleftright[1])));
-                return [node, result[1]];
-            } else if (symb.input == "cancel") {   // cancel
-                node = this.createMmlNode(symb.tag, result[0]);
-                node.setAttribute("notation", "updiagonalstrike");
-                return [node, result[1]];
-            } else if (typeof symb.acc == "boolean" && symb.acc) {   // accent
-                node = this.createMmlNode(symb.tag, result[0]);
-                var accnode = this.createMmlNode("mo", document.createTextNode(symb.output));
-                if (symb.input == "vec" && (
-                    (result[0].nodeName == "mrow" && result[0].childNodes.length == 1
-                        && result[0].firstChild.firstChild.nodeValue !== null
-                        && result[0].firstChild.firstChild.nodeValue.length == 1) ||
-                    (result[0].firstChild && result[0].firstChild.nodeValue !== null
-                        && result[0].firstChild.nodeValue.length == 1))) {
-                    accnode.setAttribute("stretchy", '');
-                }
-                node.appendChild(accnode);
-                return [node, result[1]];
-            } else {                        // font change command
-                if (typeof symb.codes != "undefined") {
-                    for (i = 0; i < result[0].childNodes.length; i++)
-                        ['mrow', 'mi', 'mo', 'mtext'].map((tag) => {
-                            // if(result[0].nodeName === tag)
-                            //     result[0].textContent = this.substituteGlyphs(result[0].textContent, symbol.codes);
-                            if (result[0].childNodes[i].nodeName === tag)
-                                result[0].childNodes[i].textContent = this.substituteGlyphs(result[0].childNodes[i].textContent, symb.codes);
-                        })
-                }
-
-                node = this.createMmlNode(symb.tag, result[0]);
-                // node.setAttribute(symbol.atname, symbol.atval);
-                return [node, result[1]];
-            }
-        case BINARY:
-            str = this.AMremoveCharsAndBlanks(str, symb.input.length);
-            result = this.AMparseSexpr(str);
-            if (result[0] == null) return [this.createMmlNode("mo",
-                document.createTextNode(symb.input)), str];
-            this.AMremoveBrackets(result[0]);
-            var result2 = this.AMparseSexpr(result[1]);
-            if (result2[0] == null) return [this.createMmlNode("mo",
-                document.createTextNode(symb.input)), str];
-            this.AMremoveBrackets(result2[0]);
-            if (['color', 'class', 'id'].indexOf(symb.input) >= 0) {
-
-                // Get the second argument
-                if (str.charAt(0) == "{") i = str.indexOf("}");
-                else if (str.charAt(0) == "(") i = str.indexOf(")");
-                else if (str.charAt(0) == "[") i = str.indexOf("]");
-                st = str.slice(1, i);
-
-                // Make a mathml node
-                node = this.createMmlNode(symb.tag, result2[0]);
-
-                // Set the correct attribute
-                if (symb.input === "color") node.setAttribute("mathcolor", st)
-                else if (symb.input === "class") node.setAttribute("class", st)
-                else if (symb.input === "id") node.setAttribute("id", st)
-                return [node, result2[1]];
-            }
-            if (symb.input == "root" || symb.output == "stackrel")
-                newFrag.appendChild(result2[0]);
-            newFrag.appendChild(result[0]);
-            if (symb.input == "frac") newFrag.appendChild(result2[0]);
-            return [this.createMmlNode(symb.tag, newFrag), result2[1]];
-        case INFIX:
-            str = this.AMremoveCharsAndBlanks(str, symb.input.length);
-            return [this.createMmlNode("mo", document.createTextNode(symb.output)), str];
-        case SPACE:
-            str = this.AMremoveCharsAndBlanks(str, symb.input.length);
-            node = this.createMmlNode("mspace");
-            node.setAttribute("width", "1ex");
-            newFrag.appendChild(node);
-            newFrag.appendChild(
-                this.createMmlNode(symb.tag, document.createTextNode(symb.output)));
-            node = this.createMmlNode("mspace");
-            node.setAttribute("width", "1ex");
-            newFrag.appendChild(node);
-            return [this.createMmlNode("mrow", newFrag), str];
-
-            case LEFTRIGHT:
-            //    if (rightvert) return [null,str]; else rightvert = true;
-            this.AMnestingDepth++;
-            str = this.AMremoveCharsAndBlanks(str, symb.input.length);
-            result = this.AMparseExpr(str, false);
-            this.AMnestingDepth--;
-            st = "";
-            if (result[0].lastChild != null)
-                st = result[0].lastChild.firstChild.nodeValue;
-            if (st == "|" && str.charAt(0) !== ",") { // its an absolute value subterm
-                node = this.createMmlNode("mo", document.createTextNode(symb.output));
-                node = this.createMmlNode("mrow", node);
-                node.appendChild(result[0]);
-                return [node, result[1]];
-            } else { // the "|" is a \mid so use unicode 2223 (divides) for spacing
-                node = this.createMmlNode("mo", document.createTextNode("\u2223"));
-                node = this.createMmlNode("mrow", node);
-                return [node, str];
-            }
-                */
-            default:
-                //alert("default");
-                return [this.TSmml(symb.tag, symb.output), index + 1];  // it's a constant
-        }
-    }
-
-
-    TSgetSymbol(lex: [string, number][], index: number): AMSymbol | null {
-        return (index < lex.length && lex[index][1] >= 0) ? this.AMsymbols[lex[index][1]] : null
-    }
-
-    TSmml(t: string, frag: string): string {
-        return `<${t}>${frag}</${t}>`
     }
 
 
