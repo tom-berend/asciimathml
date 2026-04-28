@@ -22,7 +22,6 @@ export function test() {
         })
 
         /*
-        */
         appnd(div, `"abc"`)
         appnd(div, 'a b c, a,b,c')
         appnd(div, '(a+b)')
@@ -58,6 +57,7 @@ export function test() {
         appnd(div, `bold (x_2)`)
         appnd(div, `bold x_2`)
         appnd(div, `int x`)
+        */
         appnd(div, `int (x)`)
         appnd(div, `int (x_2) y z`)
         appnd(div, `bold (x_2) y z`)
