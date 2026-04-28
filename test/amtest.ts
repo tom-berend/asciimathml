@@ -25,6 +25,7 @@ export function test() {
         */
         appnd(div, `"abc"`)
         appnd(div, 'a b c, a,b,c')
+        appnd(div, '(a+b)')
         appnd(div, 'alpha  beta  gamma')
         appnd(div, 'NN')
         appnd(div, 'NN ZZ')
@@ -66,8 +67,18 @@ export function test() {
         appnd(div, `bold( [[a,b,c,d]] )`)
         appnd(div, `bold( [[a,b,c,d]] ) `)
         appnd(div, 'a/b')
+        appnd(div, 'a/b+c')
         appnd(div, 'a+b/b')
-        appnd(div, '(a+b)/b')
+        appnd(div, '(a+b)/c')
+        appnd(div, 'a/(b+c)')
+        appnd(div, 'a/((b+c))')
+
+        appnd(div, 'a^b')
+        appnd(div, 'a^b+c')
+        appnd(div, 'a+b^b')
+        appnd(div, '(a+b)^c')
+        appnd(div, 'a^(b+c)')
+        appnd(div, 'a^((b+c))')
 
 
 

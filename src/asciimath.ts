@@ -44,7 +44,6 @@ THE SOFTWARE.
 */
 
 
-type Tag = 'div' | 'p' | 'span' | 'body' | 'a'
 type recurseType = 'func' | 'acc' | 'leftbracket' | ''    // enforce calledFrom
 
 // difference from Dr Lippman's version
@@ -628,29 +627,24 @@ export class AsciiMath {
             console.warn(`%cinner outer index: '${index}', lex[index]: '${JSON.stringify(lex[index])}'`, 'background-color:green;')
 
             let partial = this.recursiveParser(lex, index, '', '')
-            output += partial[0]
             index = partial[1]
 
-            if (oldIndex == index) // sanity check - did we eat anything?
+            if (oldIndex == partial[1]) // sanity check - did we eat anything?
                 throw new Error(`didn't move forward on ${lex[index][0]}`)
 
-
+            // now check if the partial result is followed by INFIX
             let symb = (index < lex.length && lex[index][1] >= 0) ? AMsymbols[lex[index][1]] : null
             if (symb && symb.ttype == INFIX) {
-                output = `<msubsup>`
-                index += 1
-                output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`
-                index += 1
-                symb = AMsymbols[lex[index][1]]   // the lex we are looking at
-                output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`
-                index += 1
-                symb = AMsymbols[lex[index][1]]   // the lex we are looking at
-                output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`
-
-                output = `</msubsup>`
-                throw new Error(output)
+                partial = this.recursiveParser(lex, oldIndex, 'acc', '')    // run it again as an accent
+                index = partial[1]
+                index += 1  // the infix
+                let partial2 = this.recursiveParser(lex, index, 'acc', '')
+                output += `<${symb.tag} ${extraStyle}><mrow>${partial[0]}</mrow><mrow>${partial2[0]}</mrow></${symb.tag}>`
+                index = partial2[1]
+            } else {
+                output += partial[0]    // almost every case except INFIX
+                index = partial[1]
             }
-
         }
 
         output += `</mrow>`
@@ -682,7 +676,8 @@ export class AsciiMath {
 
                 // a special case for infix - we look ahead.  if infix we must infix first
                 let nextSymb = (index + 1 < lex.length && lex[index + 1][1] >= 0) ? AMsymbols[lex[index + 1][1]] : null
-                if (nextSymb && nextSymb.ttype === INFIX) {
+
+                if (false) { //(nextSymb && nextSymb.ttype === INFIX) {
                     output += `<${nextSymb.tag}>`
 
                     if (this.containsOnlyNumbers(lex[index][0])) {
@@ -714,7 +709,12 @@ export class AsciiMath {
                     }
                     index += 1
                 }
-                return [output, index]
+
+                // if (calledFrom == 'acc' || calledFrom == 'func')
+                //     return [output, index]
+                // else
+                //     continue
+
             } else if (lex[index][1] === -2) {  // quoted string
                 output += `<mtext ${extraStyle}>` + lex[index][0] + `</mtext>`;
                 index += 1
@@ -745,6 +745,9 @@ export class AsciiMath {
 
     /**  returns parsed string and index of NEXT token */
     recursiveParser(lex: [string, number][], index: number, calledFrom: recurseType, extraStyle: string): [string, number] {
+
+        if (index > lex.length - 1)
+            throw new Error()
 
         let output = ''
         console.warn(`%cinner partial index=${index}, lex:'${lex[index][0]}' called from '${calledFrom}'`, 'background-color:darkred;')
@@ -780,7 +783,8 @@ export class AsciiMath {
         }
 
 
-        if (lex[index][1] === -1 || lex[index][1] === -2) {  // literal or quoted string, no symb available
+
+        if (lex[index][1] === -1 || lex[index][1] === -2 || AMsymbols[lex[index][1]].ttype == CONST) {  // literal or quoted string, or constants
             // let charArray = lex[index][0].split('')
             // charArray.forEach(char => output += `<mi>` + char + `</mi>`);
             // [output, index + 1]
@@ -979,8 +983,9 @@ export class AsciiMath {
                         // }
 
                     } else {
+
                         // user wants brackets
-                        output += `<${symb.tag} ${extraStyle}>${symb.output}LEFT1</${symb.tag}>`
+                        output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`
                         index += 1
 
                         // look ahead
@@ -1003,7 +1008,7 @@ export class AsciiMath {
                         symb = (index < lex.length && lex[index][1] >= 0) ? AMsymbols[lex[index][1]] : null
                         console.log('TTT', symb)
                         if (symb && symb.ttype == RIGHTBRACKET) {
-                            output += `<${symb.tag} ${extraStyle}>${symb.output}LEFT2</${symb.tag}>`
+                            output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`
                             index += 1
                         } else {
                             console.assert(true, ` expected a RIGHTBRACKET, got '${symb && symb.input}' `)
@@ -1026,8 +1031,8 @@ export class AsciiMath {
                         //     continue;
                         //     // return [output, index]
 
-                    } else if (calledFrom == 'acc') {  // show a bracket  for functions
-                        throw new Error('should be handled by leftbracket')
+                    // } else if (calledFrom == 'acc') {  // show a bracket  for functions
+                    //     throw new Error('should be handled by leftbracket')
 
                         // } else if (lookAheadSymbTtype == LEFTBRACKET) { //  middle ][ boundary of a matrix
                         //     // index += 1
@@ -1083,12 +1088,12 @@ export class AsciiMath {
 
                 case INFIX:
 
-                    output += `<${symb.tag} ${extraStyle}>`      // nextSymbol sub, sup goes first
-                    // let acc = this.constantEater(lex, index + 1, calledFrom, extraStyle)  // current symbol
-                    let left = this.recursiveParser(lex, index + 1, calledFrom, extraStyle)
-                    output += left[0]
-                    index = left[1]
-                    output += `</${symb.tag}>`  // close the sub sup
+                    // output += `<${symb.tag} ${extraStyle}>`      // nextSymbol sub, sup goes first
+                    // // let acc = this.constantEater(lex, index + 1, calledFrom, extraStyle)  // current symbol
+                    // let left = this.recursiveParser(lex, index + 1, calledFrom, extraStyle)
+                    // output += left[0]
+                    // index = left[1]
+                    // output += `</${symb.tag}>`  // close the sub sup
                     return [output, index]
 
 
