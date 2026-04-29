@@ -621,7 +621,7 @@ export class AsciiMath {
 
         while (index < lex.length) {
             let oldIndex = index
-            if (this.safety > 100) {
+            if (this.safety++ > 100) {
                 throw new Error(`Endless loop: output '${output}' at index ${index}: ${JSON.stringify(lex[index])}`)
             }
             console.warn(`%cinner outer index: '${index}', lex[index]: '${JSON.stringify(lex[index])}'`, 'background-color:green;')
@@ -632,19 +632,19 @@ export class AsciiMath {
             if (oldIndex == partial[1]) // sanity check - did we eat anything?
                 throw new Error(`didn't move forward on ${lex[index][0]}`)
 
-            // now check if the partial result is followed by INFIX
-            let symb = (index < lex.length && lex[index][1] >= 0) ? AMsymbols[lex[index][1]] : null
-            if (symb && symb.ttype == INFIX) {
-                partial = this.recursiveParser(lex, oldIndex, 'acc', '')    // run it again as an accent
-                index = partial[1]
-                index += 1  // the infix
-                let partial2 = this.recursiveParser(lex, index, 'acc', '')
-                output += `<${symb.tag} ${extraStyle}><mrow>${partial[0]}</mrow><mrow>${partial2[0]}</mrow></${symb.tag}>`
-                index = partial2[1]
-            } else {
-                output += partial[0]    // almost every case except INFIX
-                index = partial[1]
-            }
+            // // now check if the partial result is followed by INFIX
+            // let symb = (index < lex.length && lex[index][1] >= 0) ? AMsymbols[lex[index][1]] : null
+            // if (symb && symb.ttype == INFIX) {
+            //     partial = this.recursiveParser(lex, oldIndex, 'acc', '')    // run it again as an accent
+            //     index = partial[1]
+            //     index += 1  // the infix
+            //     let partial2 = this.recursiveParser(lex, index, 'acc', '')
+            //     output += `<${symb.tag} ${extraStyle}><mrow>${partial[0]}</mrow><mrow>${partial2[0]}</mrow></${symb.tag}>`
+            //     index = partial2[1]
+            // } else {
+            output += partial[0]    // almost every case except INFIX
+            index = partial[1]
+            // }
         }
 
         output += `</mrow>`
@@ -677,7 +677,7 @@ export class AsciiMath {
                 output += `<mo ${extraStyle}>${AMsymbols[lex[index][1]].output}</mo>`
                 output += `<mrow>`
                 let left = this.recursiveParser(lex, index + 1, 'func', extraStyle)
-                output += left[0] +`</mrow>`
+                output += left[0] + `</mrow>`
                 index = left[1]
                 continue;
             }
@@ -685,7 +685,6 @@ export class AsciiMath {
             if (lex[index][1] === -1) {  // literal, no symb available
 
                 let nextSymb = (index + 1 < lex.length && lex[index + 1][1] >= 0) ? AMsymbols[lex[index + 1][1]] : null
-
 
 
                 // special case for infix - we look ahead.  if infix we must infix first
@@ -762,400 +761,367 @@ export class AsciiMath {
             throw new Error()
 
         let output = ''
-        console.warn(`%cinner partial index=${index}, lex:'${lex[index][0]}' called from '${calledFrom}'`, 'background-color:darkred;')
+        while (index < lex.length) {
+
+            console.warn(`%cinner partial index=${index}, lex:'${lex[index][0]}' called from '${calledFrom}'`, 'background-color:darkred;')
 
 
-        // just for debugging
-        let current = index < lex.length ? lex[index] : -1
+            // just for debugging
+            let current = index < lex.length ? lex[index] : -1
 
-        // console.log('top loop', JSON.stringify(lex[index]))
-        this.safety += 1
-        if (this.safety > 100) {
-            console.log(`output '${output}'`)
-            if (lex[index][1] >= 0) {
+            // console.log('top loop', JSON.stringify(lex[index]))
+            this.safety += 1
+            if (this.safety > 100) {
+                console.log(`output '${output}'`)
+                if (lex[index][1] >= 0) {
+                    let symb = AMsymbols[lex[index][1]]   // the lex we are looking at
+                    let t: string = symb.ttype.toString()
+                    if (symb.ttype == 0) t = 'CONST'
+                    if (symb.ttype == 1) t = 'UNARY'
+                    if (symb.ttype == 2) t = 'BINARY'
+                    if (symb.ttype == 3) t = 'INFIX'
+                    if (symb.ttype == 4) t = 'LEFTBRACKET'
+
+                    console.log(`ttype: ${t}`, symb)
+
+                }
+                let str = ''
+                for (let i = index; i < lex.length; i++) {
+                    str += lex[i][0]
+                }
+                console.log(lex)
+                // index += 10
+                // return[output,index]
+                throw new Error(`endless loop:, string = '${str}', output = '${output}', 'index: '${index}'`)
+            }
+
+
+
+            if (lex[index][1] === -1 || lex[index][1] === -2 || AMsymbols[lex[index][1]].ttype == CONST) {  // literal or quoted string, or constants
+                // let charArray = lex[index][0].split('')
+                // charArray.forEach(char => output += `<mi>` + char + `</mi>`);
+                // [output, index + 1]
+                let left = this.constantEater(lex, index, calledFrom, extraStyle)
+                output += left[0]
+                index = left[1]
+                continue //return [output, index] //continue;
+
+
+
+            } else {
+
                 let symb = AMsymbols[lex[index][1]]   // the lex we are looking at
-                let t: string = symb.ttype.toString()
-                if (symb.ttype == 0) t = 'CONST'
-                if (symb.ttype == 1) t = 'UNARY'
-                if (symb.ttype == 2) t = 'BINARY'
-                if (symb.ttype == 3) t = 'INFIX'
-                if (symb.ttype == 4) t = 'LEFTBRACKET'
+                let nextSymb = (index + 1 < lex.length && lex[index + 1][1] >= 0) ? AMsymbols[lex[index + 1][1]] : null
 
-                console.log(`ttype: ${t}`, symb)
+                // define lookAhead symbol type so don't have to keep checking if there is an entry in AMsymbol.
+                let lookAheadSymbTtype = (nextSymb) ? AMsymbols[lex[index + 1][1]].ttype : -1
 
-            }
-            let str = ''
-            for (let i = index; i < lex.length; i++) {
-                str += lex[i][0]
-            }
-            console.log(lex)
-            // index += 10
-            // return[output,index]
-            throw new Error(`endless loop:, string = '${str}', output = '${output}', 'index: '${index}'`)
-        }
+                // console.log('symb in recursive', symb, lookAheadSymbTtype)
 
-
-
-        if (lex[index][1] === -1 || lex[index][1] === -2 || AMsymbols[lex[index][1]].ttype == CONST) {  // literal or quoted string, or constants
-            // let charArray = lex[index][0].split('')
-            // charArray.forEach(char => output += `<mi>` + char + `</mi>`);
-            // [output, index + 1]
-            let left = this.constantEater(lex, index, calledFrom, extraStyle)
-            output += left[0]
-            index = left[1]
-            return [output, index] //continue;
-
-
-
-        } else {
-
-            let symb = AMsymbols[lex[index][1]]   // the lex we are looking at
-            let nextSymb = (index + 1 < lex.length && lex[index + 1][1] >= 0) ? AMsymbols[lex[index + 1][1]] : null
-
-            // define lookAhead symbol type so don't have to keep checking if there is an entry in AMsymbol.
-            let lookAheadSymbTtype = (nextSymb) ? AMsymbols[lex[index + 1][1]].ttype : -1
-
-            // console.log('symb in recursive', symb, lookAheadSymbTtype)
-
-            switch (symb.ttype) {
-                case -1:
-                case -2:
-                    output += symb.input
-                    index += 1
-                    return [output, index]
-
-                case CONST:
-
-                    // if (calledFrom == 'func' || calledFrom == '') {
-                    //     let left = this.constantEater(lex, index, calledFrom, extraStyle)
-                    //     output += left[0]
-                    //     index = left[1]
-                    //     console.log('const loop1', symb)
-
-                    // } else if (lookAheadSymbTtype == INFIX) {  // consts like INT (integral) have infix
-                    //     output = `<msubsup>`
-                    //     index += 1
-                    //     output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`  // eg: tan
-                    //     index += 1
-                    //     symb = AMsymbols[lex[index][1]]   // the lex we are looking at
-                    //     output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`  // eg: tan
-                    //     index += 1
-                    //     symb = AMsymbols[lex[index][1]]   // the lex we are looking at
-                    //     output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`  // eg: tan
-
-                    //     output = `</msubsup>`
-                    //     return [output, index]
-
-                    // } else {      // acc only eats a single symbol
-                    output = `<${symb.tag} ${extraStyle}>` + symb.output + `</${symb.tag}>`
-                    index += 1
-                    console.log('const loop2', symb)
-                    // return [output, index]
-                    // }
-                    return [output, index];
-
-                case UNARY:
-
-                    if (symb.input == 'bold') {
-                        index += 1  // eat the bold
-                        let left = this.recursiveParser(lex, index, 'acc', `style='font-weight:bold;'`)
-                        output += left[0]
-                        index = left[1]
+                switch (symb.ttype) {
+                    case -1:
+                    case -2:
+                        output += symb.input
+                        index += 1
                         return [output, index]
 
-                        // // three cases - open(, and other
-                        // if (nextSymb && nextSymb.input == '(') {   // bold as a function, eat the brackets
-                        //     let left = this.recursiveParser(lex, index + 1, '', `style='font-weight:bold;'`)
+                    case CONST:
+
+                        // if (calledFrom == 'func' || calledFrom == '') {
+                        //     let left = this.constantEater(lex, index, calledFrom, extraStyle)
                         //     output += left[0]
                         //     index = left[1]
+                        //     console.log('const loop1', symb)
 
-                        //     // sanity check
-                        //     symb = (index < lex.length && lex[index][1] >= 0) ? AMsymbols[lex[index][1]] : null
-                        //     console.assert(symb && symb.input == ')', `expected ')', got '${symb && symb.input}' at index ${index}`)
+                        // } else if (lookAheadSymbTtype == INFIX) {  // consts like INT (integral) have infix
+                        //     output = `<msubsup>`
+                        //     index += 1
+                        //     output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`  // eg: tan
+                        //     index += 1
+                        //     symb = AMsymbols[lex[index][1]]   // the lex we are looking at
+                        //     output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`  // eg: tan
+                        //     index += 1
+                        //     symb = AMsymbols[lex[index][1]]   // the lex we are looking at
+                        //     output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`  // eg: tan
 
-                        //     index += 1  // this is the right round bracket
+                        //     output = `</msubsup>`
+                        //     return [output, index]
 
-                        //     // } else if (nextSymb && nextSymb.ttype == LEFTBRACKET) {
-                        //     //     let left = this.recursiveParser(lex, index, '', `style='font-weight:bold;'`)
-                        //     //     output += left[0]
-                        //     //     index = left[1]
+                        // } else {      // acc only eats a single symbol
+                        output = `<${symb.tag} ${extraStyle}>` + symb.output + `</${symb.tag}>`
+                        index += 1
+                        console.log('const loop2', symb)
+                        // return [output, index]
+                        // }
+                        break;  //return [output, index];
 
-                        //     //     index += 1  // this is the right bracket
+                    case UNARY:
 
-                        // } else {
+                        // if (symb.input == 'bold') {
+                        //     index += 1  // eat the bold
                         //     let left = this.recursiveParser(lex, index, 'acc', `style='font-weight:bold;'`)
                         //     output += left[0]
                         //     index = left[1]
-                        // }
+                        //     return [output, index]
+
+
+                        // if (lookAheadSymbTtype == LEFTBRACKET)
+                        //     index += 1
+                        // let left = this.recursiveParser(lex, index, '', `style='font-weight:bold;'`)
+                        // output += left[0]
+                        // index = left[1]
+                        // if (lookAheadSymbTtype == LEFTBRACKET)
+                        //     index += 1
                         // return [output, index]
 
 
-                    } else if (symb.func) {               // eg tan
-                        // console.log('func',index)
-                        output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`  // eg: tan
-                        let func = this.recursiveParser(lex, index + 1, 'func', extraStyle)    // argument for tan
-                        output += func[0]
-                        index = func[1]
-                        // return [output, index]   // end of expression
-                        return [output, index]
+                        if (symb.func) {               // eg tan
+                            // console.log('func',index)
+                            output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`  // eg: tan
+                            let func = this.recursiveParser(lex, index + 1, 'func', extraStyle)    // argument for tan
+                            output += func[0]
+                            index = func[1]
+                            // return [output, index]   // end of expression
+                            return [output, index]
 
-                    } else if (symb.acc) {        // eg; vec
-                        output += `<${symb.tag} ${extraStyle}>`  // mover
+                        } else if (symb.acc) {        // eg; vec
+                            output += `<${symb.tag} ${extraStyle}>`  // mover
 
-                        output += `<mrow>`
-                        let acc = this.recursiveParser(lex, index + 1, 'acc', extraStyle)
-                        output += acc[0]
-                        index = acc[1]
-                        output += `</mrow>`
+                            output += `<mrow>`
+                            let acc = this.recursiveParser(lex, index + 1, 'acc', extraStyle)
+                            output += acc[0]
+                            index = acc[1]
+                            output += `</mrow>`
 
-                        output += `<mo ${extraStyle}>` + symb.output + `</mo>`
-                        output += `</${symb.tag} ${extraStyle}>`  // <mover>
-
-                        // this is the end of the accent
-                        // continue
-                        return [output, index]
+                            output += `<mo ${extraStyle}>` + symb.output + `</mo>`
+                            output += `</${symb.tag} ${extraStyle}>`  // <mover>
+                            return [output, index]
 
 
-                    } else if (symb.rewriteleftright) {
-                        // console.log('rewrite')
-                        output += `<mrow>`
-                        output += `<mo ${extraStyle}>` + symb.rewriteleftright[0] + `</mo>`
-                        let left = this.recursiveParser(lex, index + 1, 'acc', extraStyle)
-                        output += left[0]
-                        index = left[1]
-                        output += `<mo ${extraStyle}>` + symb.rewriteleftright[1] + `</mo>`
-                        output += `</mrow>`
-                        return [output, index]
+
+                        } else if (symb.rewriteleftright) {
+                            // console.log('rewrite')
+                            output += `<mrow>`
+                            output += `<mo ${extraStyle}>` + symb.rewriteleftright[0] + `</mo>`
+                            let left = this.recursiveParser(lex, index + 1, 'acc', extraStyle)
+                            output += left[0]
+                            index = left[1]
+                            output += `<mo ${extraStyle}>` + symb.rewriteleftright[1] + `</mo>`
+                            output += `</mrow>`
 
 
-                    } else if (symb.codes) {
-                        output += ''
+                        } else if (symb.codes) {
+                            output += ''
 
-                    } else {// eg: sqrt, bold
-                        output += `<${symb.tag} ${extraStyle}>`
-                        output += `<mrow>`
-                        let acc = this.recursiveParser(lex, index + 1, 'acc', extraStyle)
-                        output += acc[0]
-                        index = acc[1]
-                        output += `</mrow>`
-                        output += `</${symb.tag}>`      // close of sqrt?
-                        // throw new Error('unary')
-                    }
-                    break;
-
-                case LEFTBRACKET:
-                    console.warn('leftbracket', index, `'${calledFrom}'`, lex[index], (index < lex.length - 1) ? lex[index + 1] : '')
-
-                    if (calledFrom == 'func') {
-
-                        let output = `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`
-                        let inside = this.recursiveParser(lex, index + 1, 'leftbracket', extraStyle)
-                        output += inside[0]
-                        index = inside[1]
-
-                        if (index < lex.length) {
-                            let rightb = AMsymbols[lex[index][1]]   // the closing bracket
-                            if (rightb && rightb.ttype == RIGHTBRACKET) {   // safety check, it SHOULD be a rightbracket
-                                output += `<${rightb.tag} ${extraStyle}>${rightb.output}</${rightb.tag}>`
-                                index += 1
+                        } else {// eg: sqrt, bold
+                            if (symb.input == 'bold') {   // we handle bold below, but styling isn't in the table
+                                extraStyle = `style='font-weight:bold;'`
+                                symb.tag = 'mrow'
                             }
+
+                            output += `<${symb.tag} ${extraStyle}>`
+                            // output += `<mrow>`
+                            let acc = this.recursiveParser(lex, index + 1, 'acc', extraStyle)
+                            output += acc[0]
+                            index = acc[1]
+                            // output += `</mrow>`
+                            output += `</${symb.tag}>`      // close of sqrt?
                         }
-                        return [output, index]   // end of expression
+                        break;
 
-                    } else if (calledFrom == 'acc') {
-                        // brackets do not go into output for accents, only the insides
-                        let left = this.recursiveParser(lex, index + 1, '', extraStyle)
-                        output += left[0]
+                    case LEFTBRACKET:
+                        console.warn('leftbracket', index, `'${calledFrom}'`, lex[index], (index < lex.length - 1) ? lex[index + 1] : '')
 
-                        index = left[1] + 1 // eat the closing bracket
-                        return [output, index]
+                        if (calledFrom == 'func') {
+
+                            output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`
+                            let inside = this.recursiveParser(lex, index + 1, 'leftbracket', extraStyle)
+                            output += inside[0]
+                            index = inside[1]
+
+                            if (index < lex.length) {
+                                let rightb = AMsymbols[lex[index][1]]   // the closing bracket
+                                if (rightb && rightb.ttype == RIGHTBRACKET) {   // safety check, it SHOULD be a rightbracket
+                                    output += `<${rightb.tag} ${extraStyle}>${rightb.output}</${rightb.tag}>`
+                                    index += 1
+                                }
+                            }
+                            return [output, index]
+
+                        } else if (calledFrom == 'acc') {
+                            // brackets do not go into output for accents, only the insides
+                            let left = this.recursiveParser(lex, index + 1, '', extraStyle)
+                            output += left[0]
+
+                            index = left[1] + 1 // eat the closing bracket
+                            return [output, index]
 
 
-                    } else if (calledFrom == 'leftbracket') {
-                        // don't output these brackets
-                        // output += `<${symb.tag} ${extraStyle}>${symb.output}bob3</${symb.tag}>`
-                        index += 1
-
-                        symb = (index < lex.length && lex[index][1] >= 0) ? AMsymbols[lex[index][1]] : null
-                        let left = this.recursiveParser(lex, index, 'leftbracket', extraStyle)
-                        output += left[0]
-                        index = left[1]
-
-                        // look ahead, eat the right bracket
-                        symb = (index < lex.length && lex[index][1] >= 0) ? AMsymbols[lex[index][1]] : null
-                        console.assert(symb && symb.ttype == RIGHTBRACKET, ` expected a RIGHTBRACKET, got '${symb && symb.input}' `)
-
-                        index += 1
-
-                        // // if the brackets that opened this loop close, dispay them
-                        // symb = (index < lex.length && lex[index][1] >= 0) ? AMsymbols[lex[index][1]] : null
-                        // console.log('bill3', symb, index, lex[index], lex)
-                        // if (symb && symb.ttype == RIGHTBRACKET) {
-                        //     output += "</mtd></mtr></mtable>"
-                        //     // don't output these brackets
-                        //     // output += `<${symb.tag} ${extraStyle}>${symb.output}bill3</${symb.tag}>`
-                        //     index += 1
-                        //     break;
-                        // }
-
-                    } else {
-
-                        // user wants brackets
-                        output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`
-                        index += 1
-
-                        // look ahead
-                        symb = (index < lex.length && lex[index][1] >= 0) ? AMsymbols[lex[index][1]] : null
-                        if (symb && AMsymbols[lex[index][1]].ttype == LEFTBRACKET) {
-                            output += `<mtable><mtr><mtd>`
+                        } else if (calledFrom == 'leftbracket') {
+                            // don't output these brackets
+                            // output += `<${symb.tag} ${extraStyle}>${symb.output}bob3</${symb.tag}>`
+                            index += 1
 
                             let left = this.recursiveParser(lex, index, 'leftbracket', extraStyle)
                             output += left[0]
                             index = left[1]
 
-                            output += `</mtd></mtr></mtable>`
-                        } else {
-                            let left = this.recursiveParser(lex, index, '', extraStyle)
-                            output += left[0]
-                            index = left[1]
-                        }
+                            // look ahead, eat the right bracket
+                            symb = (index < lex.length && lex[index][1] >= 0) ? AMsymbols[lex[index][1]] : null
+                            console.assert(symb && symb.ttype == RIGHTBRACKET, ` expected a RIGHTBRACKET, got '${symb && symb.input}' `)
+                            index += 1
+                            return [output, index]
 
-                        // look ahead, eat the right bracket
-                        symb = (index < lex.length && lex[index][1] >= 0) ? AMsymbols[lex[index][1]] : null
-                        console.log('TTT', symb)
-                        if (symb && symb.ttype == RIGHTBRACKET) {
+                            // // if the brackets that opened this loop close, dispay them
+                            // symb = (index < lex.length && lex[index][1] >= 0) ? AMsymbols[lex[index][1]] : null
+                            // console.log('bill3', symb, index, lex[index], lex)
+                            // if (symb && symb.ttype == RIGHTBRACKET) {
+                            //     output += "</mtd></mtr></mtable>"
+                            //     // don't output these brackets
+                            //     // output += `<${symb.tag} ${extraStyle}>${symb.output}bill3</${symb.tag}>`
+                            //     index += 1
+                            //     break;
+                            // }
+
+                        } else {
+                            // not acc, not func, not matrix
                             output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`
                             index += 1
-                        } else {
-                            console.assert(true, ` expected a RIGHTBRACKET, got '${symb && symb.input}' `)
+
+                            // process what is inside the brackets
+                            symb = (index < lex.length && lex[index][1] >= 0) ? AMsymbols[lex[index][1]] : null
+                            if (symb && AMsymbols[lex[index][1]].ttype == LEFTBRACKET) {
+                                output += `<mtable><mtr><mtd>`
+                                let left = this.recursiveParser(lex, index, 'leftbracket', extraStyle)
+                                output += left[0]
+                                index = left[1]
+                                output += `</mtd></mtr></mtable>`
+
+                            } else {
+                                let left = this.recursiveParser(lex, index, '', extraStyle)
+                                output += left[0]
+                                index = left[1]
+                            }
+
+                            // process the right bracket
+                            symb = (index < lex.length && lex[index][1] >= 0) ? AMsymbols[lex[index][1]] : null
+                            console.log('TTT', symb)
+                            if (symb && symb.ttype == RIGHTBRACKET) {
+                                output += `<${symb.tag} ${extraStyle}>${symb.output}</${symb.tag}>`
+                                index += 1
+                            }
+                            return [output, index]
                         }
+                        break
+
+                    case RIGHTBRACKET:
+                        console.warn('rightbracket', index, `'${calledFrom}'`, lex[index], (index < lex.length - 1) ? lex[index + 1] : '')
+
+                        if (calledFrom == 'func') {  // show a bracket  for functions
+                            output += `<${symb.tag} ${extraStyle}>${symb.output}tom4</${symb.tag}>`
+
+                            // } else if (calledFrom == 'leftbracket') { //  middle ][ boundary of a matrix
+                            //     output += `<${symb.tag} ${extraStyle}>${symb.output}tom6</${symb.tag}>`
+                            //     const newLocal = index += 1
+                            //     continue;
+                            //     // return [output, index]
+
+                        } else if (calledFrom == 'acc') {  // show a bracket  for functions
+                            throw new Error('should be handled by leftbracket')
+
+                        } else if (lookAheadSymbTtype == LEFTBRACKET) { //  middle ][ boundary of a matrix
+                            index += 1
+                            return[output,index]
+
+                            //     output += `<${symb.tag} ${extraStyle}>${symb.output}tom1</${symb.tag}>`
+                            //     output += `</mtd><mtd>`
+                            //     let left = this.recursiveParser(lex, index + 1, 'leftbracket', extraStyle)
+                            //     output += left[0]
+                            //     index = left[1]
+                            //     return [output, index + 1]
+
+                        } else if (lookAheadSymbTtype == RIGHTBRACKET) { //  ]] end of a matrix
+                            index += 1
+                            return[output,index]
+                            throw new Error(`should be handled by leftbracket, index = ${index}`)
+                            // // output += `<${symb.tag} ${extraStyle}>${symb.output}tom7</${symb.tag}>`
+                            // output += `</mtd></mtr></mtable>`
+                            // index += 1
+
+
+                        } else if (calledFrom == 'leftbracket') {
+                            // output += '</mtd>'
+                            // output += `<${symb.tag} ${extraStyle}>${symb.output}tom5</${symb.tag}>`
+                            // output += '<mtd>'
+                            // index += 1
+
+                            // let left = this.recursiveParser(lex, index + 1, 'leftbracket', extraStyle)
+                            // output += left[0]
+                            // index = left[1]
+
+                            // is there a closing bracket?
+                            // if (index < lex.length - 1 && AMsymbols[lex[index][1]].ttype == RIGHTBRACKET) {
+                            // let nextSymb = AMsymbols[lex[index][1]]
+                            // output += `<${nextSymb.tag} ${extraStyle}>` + nextSymb.output + `tom</${nextSymb.tag}>`
+                            // index += 1
+                            // }
+                            // output += "</mtd></mtr></mtable>"
+                            return [output, index]
+
+                        } else {
+                            return [output, index]
+
+                        }
+                        break;
+
+                    case INFIX:
+
+                        // let symb = (index < lex.length && lex[index][1] >= 0) ? AMsymbols[lex[index][1]] : null
+                        // if (symb && symb.ttype == INFIX) {
+                        let infixPart2 = this.recursiveParser(lex, index + 1, '', '')
+                        output = `<${symb.tag} ${extraStyle}>${symb.output}<mrow>${output}</mrow><mrow>${infixPart2[0]}</mrow></${symb.tag}>`
+                        index = infixPart2[1]
+                        // }
                         return [output, index]
-                    }
 
-                    break
 
-                case RIGHTBRACKET:
-                    console.warn('rightbracket', index, `'${calledFrom}'`, lex[index], (index < lex.length - 1) ? lex[index + 1] : '')
 
-                    if (calledFrom == 'func') {  // show a bracket  for functions
-                        output += `<${symb.tag} ${extraStyle}>${symb.output}tom4</${symb.tag}>`
-                        return [output, index + 1]
+                    //     output += `<${symb.tag}>`      // sub, sup
+                    //     let acc = this.constantEater(lex, index+1, calledFrom, extraStyle)
+                    //     output += acc[0]
+                    //     index =acc[1]
+                    //     output += `</${symb.tag}>$`
+                    //     break;
 
-                        // } else if (calledFrom == 'leftbracket') { //  middle ][ boundary of a matrix
-                        //     output += `<${symb.tag} ${extraStyle}>${symb.output}tom6</${symb.tag}>`
-                        //     const newLocal = index += 1
-                        //     continue;
-                        //     // return [output, index]
-
-                    } else if (calledFrom == 'acc') {  // show a bracket  for functions
-                        throw new Error('should be handled by leftbracket')
-
-                        // } else if (lookAheadSymbTtype == LEFTBRACKET) { //  middle ][ boundary of a matrix
-                        //     // index += 1
-
-                        //     output += `<${symb.tag} ${extraStyle}>${symb.output}tom1</${symb.tag}>`
-                        //     output += `</mtd><mtd>`
-                        //     let left = this.recursiveParser(lex, index + 1, 'leftbracket', extraStyle)
-                        //     output += left[0]
-                        //     index = left[1]
-                        //     return [output, index + 1]
-
-                    } else if (lookAheadSymbTtype == RIGHTBRACKET) { //  ]] end of a matrix
-                        // // output += `<${symb.tag} ${extraStyle}>${symb.output}tom7</${symb.tag}>`
-                        // output += `</mtd></mtr></mtable>`
+                    case DEFINITION:
+                        console.error('missing definition', symb)
                         index += 1
+                        break;
 
-                        return [output, index]
+                    case BINARY:
 
-                    } else if (calledFrom == 'leftbracket') {
-                        // output += '</mtd>'
-                        // output += `<${symb.tag} ${extraStyle}>${symb.output}tom5</${symb.tag}>`
-                        // output += '<mtd>'
-                        // index += 1
+                        index += 1  // usually mover or munder
 
-                        // let left = this.recursiveParser(lex, index + 1, 'leftbracket', extraStyle)
-                        // output += left[0]
-                        // index = left[1]
+                        let part1 = this.recursiveParser(lex, index, 'acc', extraStyle)
+                        let part2 = this.recursiveParser(lex, part1[1], 'acc', extraStyle)
 
-                        // is there a closing bracket?
-                        // if (index < lex.length - 1 && AMsymbols[lex[index][1]].ttype == RIGHTBRACKET) {
-                        // let nextSymb = AMsymbols[lex[index][1]]
-                        // output += `<${nextSymb.tag} ${extraStyle}>` + nextSymb.output + `tom</${nextSymb.tag}>`
-                        // index += 1
-                        // }
-                        // output += "</mtd></mtr></mtable>"
-                        return [output, index]
-
-                    } else {
-
-                        output += `<${symb.tag} ${extraStyle}>${symb.output}RIGHT1</${symb.tag}>`
-
-                        // if (index < lex.length - 1) {
-                        //     let left = this.recursiveParser(lex, index + 1, calledFrom, extraStyle)
-                        //     output += left[0]
-                        //     index = left[1]
-                        // }
-                        // output += `</mtd></mtr></mtable>`
-                        // continue
-                        return [output, index + 1]
-
-                    }
-                    break;
-
-                case INFIX:
-
-                    // output += `<${symb.tag} ${extraStyle}>`      // nextSymbol sub, sup goes first
-                    // // let acc = this.constantEater(lex, index + 1, calledFrom, extraStyle)  // current symbol
-                    // let left = this.recursiveParser(lex, index + 1, calledFrom, extraStyle)
-                    // output += left[0]
-                    // index = left[1]
-                    // output += `</${symb.tag}>`  // close the sub sup
-                    return [output, index]
+                        output += `<${symb.input} ${extraStyle}><mover><mrow>${part2[0]}</mrow><mrow>${[part1[0]]}</mrow></${symb.input}>`
+                        index = part2[1]
+                        break;
 
 
-
-                //     output += `<${symb.tag}>`      // sub, sup
-                //     let acc = this.constantEater(lex, index+1, calledFrom, extraStyle)
-                //     output += acc[0]
-                //     index =acc[1]
-                //     output += `</${symb.tag}>$`
-                //     break;
-
-                case DEFINITION:
-                    console.error('missing definition', symb)
-                    index += 1
-                    break;
-
-                case BINARY:
-
-                    index += 1  // usually mover or munder
-
-                    let part1 = this.recursiveParser(lex, index, 'acc', extraStyle)
-                    let part2 = this.recursiveParser(lex, part1[1], 'acc', extraStyle)
-
-                    output += `<${symb.input} ${extraStyle}><mover><mrow>${part2[0]}</mrow><mrow>${[part1[0]]}</mrow></${symb.input}>`
-                    index = part2[1]
-                    break;
-
-
-                default:
-                    console.log(symb)
-                    throw new Error(`Unexpected token ${JSON.stringify(lex[index])}`)
-                    index + 1
+                    default:
+                        console.log(symb)
+                        throw new Error(`Unexpected token ${JSON.stringify(lex[index])}`)
+                        index + 1
+                }
             }
 
-            // }
-            // while loop back to top
-        }
-        // }
+        }  // main while loop
         return [output, index]
-
-
-
-
-
-
     }
 
 
 }
+
+
