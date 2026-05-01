@@ -620,17 +620,14 @@ export class AsciiMath {
         this.safety = 0
 
         while (index < lex.length) {
-            let oldIndex = index
+            console.log(index, lex.length)
             if (this.safety++ > 100) {
                 throw new Error(`Endless loop: output '${output}' at index ${index}: ${JSON.stringify(lex[index])}`)
             }
-            console.warn(`%cinner outer index: '${index}', lex[index]: '${JSON.stringify(lex[index])}'`, 'background-color:green;')
+            console.warn(`%cinner outer index: '${index}', lex[index]: '${JSON.stringify(lex[index])}'`, 'background-color:green;',output)
 
             let partial = this.recursiveParser(lex, index, '', '')
             index = partial[1]
-
-            if (oldIndex == partial[1]) // sanity check - did we eat anything?
-                throw new Error(`didn't move forward on ${lex[index][0]}`)
 
             // // now check if the partial result is followed by INFIX
             // let symb = (index < lex.length && lex[index][1] >= 0) ? AMsymbols[lex[index][1]] : null
@@ -679,7 +676,7 @@ export class AsciiMath {
                 let left = this.recursiveParser(lex, index + 1, 'func', extraStyle)
                 output += left[0] + `</mrow>`
                 index = left[1]
-                continue;
+                return [output, index] //continue;
             }
 
             if (lex[index][1] === -1) {  // literal, no symb available
@@ -720,6 +717,7 @@ export class AsciiMath {
                     }
                     index += 1
                 }
+                return [output, index] // continue
 
                 // if (calledFrom == 'acc' || calledFrom == 'func')
                 //     return [output, index]
@@ -729,7 +727,7 @@ export class AsciiMath {
             } else if (lex[index][1] === -2) {  // quoted string
                 output += `<mtext ${extraStyle}>` + lex[index][0] + `</mtext>`;
                 index += 1
-                continue;  //return [output, index]
+                return [output, index] // continue
 
             } else {    // CONST
                 // throw new Error('cannot be anything else')
@@ -738,7 +736,7 @@ export class AsciiMath {
                     // console.assert(symb.ttype == CONST, 'expected CONST')
                     output += `<${symb.tag} ${extraStyle}>` + symb.output + `</${symb.tag}>`
                     index += 1
-                    continue; //return [output, index]
+                    return [output, index] // continue
                 } else {
                     break       // not literal or string, not CONST, we have eaten all we can
                 }
@@ -758,7 +756,7 @@ export class AsciiMath {
     recursiveParser(lex: [string, number][], index: number, calledFrom: recurseType, extraStyle: string): [string, number] {
 
         if (index > lex.length - 1)
-            throw new Error()
+            return ['', index]
 
         let output = ''
         while (index < lex.length) {
@@ -804,7 +802,7 @@ export class AsciiMath {
                 let left = this.constantEater(lex, index, calledFrom, extraStyle)
                 output += left[0]
                 index = left[1]
-                continue //return [output, index] //continue;
+                continue;
 
 
 
@@ -1031,7 +1029,7 @@ export class AsciiMath {
 
                         } else if (lookAheadSymbTtype == LEFTBRACKET) { //  middle ][ boundary of a matrix
                             index += 1
-                            return[output,index]
+                            return [output, index]
 
                             //     output += `<${symb.tag} ${extraStyle}>${symb.output}tom1</${symb.tag}>`
                             //     output += `</mtd><mtd>`
@@ -1042,7 +1040,7 @@ export class AsciiMath {
 
                         } else if (lookAheadSymbTtype == RIGHTBRACKET) { //  ]] end of a matrix
                             index += 1
-                            return[output,index]
+                            return [output, index]
                             throw new Error(`should be handled by leftbracket, index = ${index}`)
                             // // output += `<${symb.tag} ${extraStyle}>${symb.output}tom7</${symb.tag}>`
                             // output += `</mtd></mtr></mtable>`

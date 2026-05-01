@@ -22,9 +22,12 @@ export function test() {
         })
 
         /*
-        appnd(div, `"abc"`)
-        appnd(div, 'a b c, a,b,c')
-        appnd(div, '(a+b)')
+        */
+        // appnd(div, `"abc"`)
+        // appnd(div, 'a b c, a,b,c')
+        // appnd(div, '(a)')
+        // appnd(div, 'a+b')
+        appnd(div, '(a b)')
         appnd(div, 'alpha  beta  gamma')
         appnd(div, 'NN')
         appnd(div, 'NN ZZ')
@@ -45,10 +48,12 @@ export function test() {
         appnd(div, `"abc 01239 $%*"`)
         appnd(div, `bold "abc 01239 $%*"`)
         appnd(div, `bold bold "abc 01239 $%*"`)
+        appnd(div, `tan x`)
         appnd(div, `tan (x) tan (xy)`)
         appnd(div, `bold tan (xy)`)
         appnd(div, `bold (tan (xy))`)
         appnd(div, `hat(x)`)
+        appnd(div, `(hat(x))`)
         appnd(div, `hat(x) hat(x)`)
         appnd(div, `bold hat (x)`)
         appnd(div, `bold abs (x)`)
@@ -57,7 +62,6 @@ export function test() {
         appnd(div, `bold (x_2)`)
         appnd(div, `bold x_2`)
         appnd(div, `int x`)
-        */
         appnd(div, `int (x)`)
         appnd(div, `int (x_2) y z`)
         appnd(div, `bold (x_2) y z`)
